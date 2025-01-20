@@ -20,6 +20,7 @@ func main() {
 	env := db.InitDB(app)
 
 	env.Url = "http://192.168.69.235:3001"
+	// env.Url = "http://192.168.178.178:3001"
 	var loginInfo models.LoginInfo
 	result := env.DB.First(&loginInfo)
 	if result.Error != nil {

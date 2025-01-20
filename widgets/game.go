@@ -9,14 +9,14 @@ import (
 	// "bytes"
 	// "encoding/json"
 	// "errors"
-	"fmt"
+	// "fmt"
 	// "net/http"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/jkulzer/fib-client/env"
-	"github.com/jkulzer/fib-client/location"
-	// "github.com/jkulzer/fib-client/helpers"
+	// "github.com/jkulzer/fib-client/location"
+	"github.com/jkulzer/fib-client/helpers"
 	"github.com/jkulzer/fib-client/models"
 	// "github.com/jkulzer/fib-server/sharedModels"
 )
@@ -27,10 +27,11 @@ type GameWidget struct {
 }
 
 func NewGameWidget(env env.Env, parentWindow fyne.Window) *GameWidget {
+
 	w := &GameWidget{}
 	w.ExtendBaseWidget(w)
 
-	lat, lon := location.GetLocation(parentWindow)
+	// lat, lon := location.GetLocation(parentWindow)
 
 	logoutButton := widget.NewButton("Logout", func() {
 		env.DB.Delete(&models.LoginInfo{}, 1)
@@ -39,17 +40,17 @@ func NewGameWidget(env env.Env, parentWindow fyne.Window) *GameWidget {
 	})
 
 	leaveLobbyButton := widget.NewButton("Leave Lobby", func() {
-		var loginInfo models.LoginInfo
-		env.DB.First(&loginInfo)
-		userName := models.LoginInfo{
-			ID:         1,
-			LobbyToken: "",
-		}
-		result := env.DB.Save(&userName)
-		if result.Error != nil {
-			dialog.ShowError(result.Error, parentWindow)
+		appConfig, err := helpers.GetAppConfig(env, parentWindow)
+		if err != nil {
+			log.Err(err).Msg("failed to get app config while leaving lobby")
 		} else {
-			parentWindow.SetContent(NewLobbySelectionWidget(env, parentWindow))
+			appConfig.LobbyToken = ""
+			result := env.DB.Save(&appConfig)
+			if result.Error != nil {
+				dialog.ShowError(result.Error, parentWindow)
+			} else {
+				parentWindow.SetContent(NewLobbySelectionWidget(env, parentWindow))
+			}
 		}
 	})
 
@@ -66,11 +67,19 @@ func NewGameWidget(env env.Env, parentWindow fyne.Window) *GameWidget {
 		leaveLobbyButton,
 	)
 
-	center := container.NewVBox(
-		widget.NewLabel("Latitude: "+fmt.Sprint(lat)),
-		widget.NewLabel("Longitude: "+fmt.Sprint(lon)),
-	)
+	// center := container.NewVBox(
+	// 	widget.NewLabel("Latitude: "+fmt.Sprint(lat)),
+	// 	widget.NewLabel("Longitude: "+fmt.Sprint(lon)),
+	// )
+	// w.content = container.NewBorder(top, nil, nil, nil, center)
 
+	appConfig, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		log.Err(err).Msg("failed to get app config in game widget")
+	}
+	center := NewRoleSelectionWidget(env, parentWindow, appConfig.LobbyToken)
+
+	// w.content = container.NewBorder(top, nil, nil, nil, nil)
 	w.content = container.NewBorder(top, nil, nil, nil, center)
 
 	return w

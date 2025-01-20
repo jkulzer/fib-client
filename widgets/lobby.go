@@ -59,7 +59,7 @@ func NewLobbySelectionWidget(env env.Env, parentWindow fyne.Window) *LobbySelect
 	w.ExtendBaseWidget(w)
 	lobbyCodeEntry := widget.NewEntry()
 	lobbyCodeEntry.SetPlaceHolder("AG5L3T")
-	lobbyCodeEntry.Validator = validation.NewRegexp("^[A-Z0-9]{6}$", "Lobby code must be 6 characters")
+	lobbyCodeEntry.Validator = validation.NewRegexp(sharedModels.LobbyCodeRegex, "Lobby code must be 6 characters")
 
 	var appConfiguration models.LoginInfo
 	env.DB.First(&appConfiguration)
@@ -77,60 +77,62 @@ func NewLobbySelectionWidget(env env.Env, parentWindow fyne.Window) *LobbySelect
 	}
 
 	lobbyCreationButton := widget.NewButton("Create Lobby", func() {
-		loginInfo := sharedModels.CreateLobby{
-			Token: appConfiguration.Token,
-		}
-		loginInfoJson, err := json.Marshal(loginInfo)
+		req, err := http.NewRequest("POST", env.Url+"/lobby/create", nil)
 		if err != nil {
-			log.Warn().Msg("failed to marshall login info json")
 			dialog.ShowError(err, parentWindow)
+
 		}
+		// error handing already handled since it shows a popup
+		loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+		if err == nil {
 
-		bodyReader := bytes.NewReader(loginInfoJson)
-		res, err := http.Post(env.Url+"/lobby/create", "application/json", bodyReader)
-		if err != nil {
-			log.Warn().Msg("couldn't make request" + fmt.Sprint(err))
-			dialog.ShowError(err, parentWindow)
-		} else {
-			switch res.StatusCode {
-			case http.StatusCreated:
-				var responseStruct sharedModels.LobbyCreationResponse
-				responseBytes, err := helpers.ReadHttpResponse(res.Body)
-				if err != nil {
-					log.Err(err).Msg("failed to read http response for lobby creation")
-					dialog.ShowError(err, parentWindow)
-				}
-				err = json.Unmarshal(responseBytes, &responseStruct)
-				if err != nil {
-					message := "Failed to unmarshal http response"
-					log.Err(err).Msg(message)
-					dialog.ShowError(err, parentWindow)
-				}
-				userName := models.LoginInfo{
-					ID:         1,
-					LobbyToken: responseStruct.LobbyToken,
-				}
-				// tries to create the user in the db
-				result := env.DB.Save(&userName)
-				if result.Error != nil {
-					log.Err(err).Msg("failed to save configuration in database")
-					dialog.ShowError(err, parentWindow)
-				} else {
-					log.Info().Msg("created lobby " + responseStruct.LobbyToken)
-					dialog.ShowInformation("Lobby Creation", "Created lobby with token \""+responseStruct.LobbyToken+"\"", parentWindow)
-					joinLobby(responseStruct.LobbyToken, parentWindow, env)
-				}
+			req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Warn().Msg("couldn't make request" + fmt.Sprint(err))
+				dialog.ShowError(err, parentWindow)
+			} else {
+				switch res.StatusCode {
+				case http.StatusCreated:
+					var responseStruct sharedModels.LobbyCreationResponse
+					responseBytes, err := helpers.ReadHttpResponse(res.Body)
+					if err != nil {
+						log.Err(err).Msg("failed to read http response for lobby creation")
+						dialog.ShowError(err, parentWindow)
+					}
+					err = json.Unmarshal(responseBytes, &responseStruct)
+					if err != nil {
+						message := "Failed to unmarshal http response"
+						log.Err(err).Msg(message)
+						dialog.ShowError(err, parentWindow)
+					}
+					appConfig, err := helpers.GetAppConfig(env, parentWindow)
+					if err != nil {
+						log.Err(err)
+						dialog.ShowError(err, parentWindow)
+					}
+					appConfig.LobbyToken = responseStruct.LobbyToken
+					// tries to create the user in the db
+					result := env.DB.Save(&appConfig)
+					if result.Error != nil {
+						log.Err(err).Msg("failed to save configuration in database")
+						dialog.ShowError(err, parentWindow)
+					} else {
+						log.Info().Msg("created lobby " + responseStruct.LobbyToken)
+						dialog.ShowInformation("Lobby Creation", "Created lobby with token \""+responseStruct.LobbyToken+"\"", parentWindow)
+						joinLobby(responseStruct.LobbyToken, parentWindow, env)
+					}
 
-			case http.StatusForbidden:
-				message := "Not logged in. Log out and back in."
-				log.Info().Msg(message)
-				error := errors.New(message)
-				dialog.ShowError(error, parentWindow)
-			default:
-				dialog.ShowError(errors.New(fmt.Sprint(res.StatusCode)), parentWindow)
+				case http.StatusForbidden:
+					message := "Not logged in. Log out and back in."
+					log.Info().Msg(message)
+					error := errors.New(message)
+					dialog.ShowError(error, parentWindow)
+				default:
+					dialog.ShowError(errors.New(fmt.Sprint(res.StatusCode)), parentWindow)
+				}
 			}
 		}
-
 	})
 
 	lobbyJoin := container.NewVBox(lobbyEntryForm)
@@ -161,19 +163,32 @@ func joinLobby(lobbyCode string, parentWindow fyne.Window, env env.Env) {
 	}
 
 	bodyReader := bytes.NewReader(joinJson)
-	res, err := http.Post(env.Url+"/lobby/join", "application/json", bodyReader)
+	req, err := http.NewRequest("POST", env.Url+"/lobby/join", bodyReader)
 	if err != nil {
-		log.Warn().Msg("couldn't make request" + fmt.Sprint(err))
+		dialog.ShowError(err, parentWindow)
+
+	}
+	// error handing already handled since it shows a popup
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		log.Warn().Msg("couldn't get app config" + fmt.Sprint(err))
 		dialog.ShowError(err, parentWindow)
 	} else {
+		req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.Warn().Msg("couldn't make request" + fmt.Sprint(err))
+			dialog.ShowError(err, parentWindow)
+		}
 		switch res.StatusCode {
-		case http.StatusAccepted:
-			userName := models.LoginInfo{
-				ID:         1,
-				LobbyToken: lobbyCode,
+		case http.StatusOK:
+			appConfig, err := helpers.GetAppConfig(env, parentWindow)
+			if err != nil {
+				log.Err(err)
 			}
+			appConfig.LobbyToken = lobbyCode
 			// tries to create the user in the db
-			result := env.DB.Save(&userName)
+			result := env.DB.Save(&appConfig)
 			if result.Error != nil {
 				log.Err(err).Msg("failed to save configuration in database")
 				dialog.ShowError(err, parentWindow)

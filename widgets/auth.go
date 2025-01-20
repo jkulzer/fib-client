@@ -170,9 +170,13 @@ func loginOnServer(env env.Env, username, password string, parentWindow fyne.Win
 			if result.Error != nil {
 				log.Warn().Msg("error writing user config to DB with error " + fmt.Sprint(result.Error))
 			} else {
+				log.Info().Msg("wrote user config to DB")
+				loginInfo, _ := helpers.GetAppConfig(env, parentWindow)
+				fmt.Println(loginInfo)
 				parentWindow.SetContent(NewLobbyWidget(env, parentWindow))
 			}
 		case http.StatusForbidden:
+		case http.StatusBadRequest:
 			message := "Wrong Password"
 			log.Info().Msg(message)
 			error := errors.New(message)

@@ -28,8 +28,10 @@ func InitDB(app fyne.App) env.Env {
 		log.Err(err).Msg("failed to create/open db")
 	}
 
-	db.AutoMigrate(&models.LoginInfo{})
-	db.AutoMigrate(&models.LoginInfo{})
+	err = db.AutoMigrate(&models.LoginInfo{})
+	if err != nil {
+		log.Err(err)
+	}
 
 	env := env.Env{
 		DB: db,
