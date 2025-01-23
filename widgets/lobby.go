@@ -187,6 +187,7 @@ func joinLobby(lobbyCode string, parentWindow fyne.Window, env env.Env) {
 				log.Err(err)
 			}
 			appConfig.LobbyToken = lobbyCode
+			appConfig.Role = sharedModels.NoRole
 			// tries to create the user in the db
 			result := env.DB.Save(&appConfig)
 			if result.Error != nil {

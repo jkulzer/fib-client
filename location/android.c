@@ -1,7 +1,8 @@
-// go:build android
+// go:build android cgo
 
 #include <jni.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 

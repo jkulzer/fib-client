@@ -18,42 +18,8 @@ import (
 	// "github.com/jkulzer/fib-client/location"
 	"github.com/jkulzer/fib-client/helpers"
 	"github.com/jkulzer/fib-client/models"
-	"github.com/jkulzer/fib-server/sharedModels"
+	"github.com/jkulzer/fib-client/widgets"
 )
-
-type GameWidget struct {
-	widget.BaseWidget
-	content *fyne.Container
-}
-
-func NewGameWidget(env env.Env, parentWindow fyne.Window) *GameWidget {
-
-	w := &GameWidget{}
-	w.ExtendBaseWidget(w)
-
-	appConfig, err := helpers.GetAppConfig(env, parentWindow)
-	if err != nil {
-		log.Err(err).Msg("failed to get app config in game widget")
-	}
-
-	if appConfig.Role == sharedModels.Hider {
-		log.Info().Msg("Found hider role in database")
-		center := NewHiderWidget(env, parentWindow)
-		w.content = container.NewVBox(NewGameFrameWidget(env, parentWindow, center))
-	} else if appConfig.Role == sharedModels.Seeker {
-		center := NewSeekerWidget(env, parentWindow)
-		w.content = container.NewVBox(NewGameFrameWidget(env, parentWindow, center))
-	} else {
-		center := NewRoleSelectionWidget(env, parentWindow, appConfig.LobbyToken)
-		w.content = container.NewVBox(NewGameFrameWidget(env, parentWindow, center))
-	}
-
-	return w
-}
-
-func (w *GameWidget) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(w.content)
-}
 
 type GameFrameWidget struct {
 	widget.BaseWidget
@@ -73,7 +39,7 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 			log.Err(result.Error).Msg(fmt.Sprint(result.Error))
 			dialog.ShowError(result.Error, parentWindow)
 		}
-		loginRegisterTabs := GetLoginRegisterTabs(env, parentWindow)
+		loginRegisterTabs := widgets.GetLoginRegisterTabs(env, parentWindow)
 		parentWindow.SetContent(loginRegisterTabs)
 	})
 
@@ -87,7 +53,7 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 			if result.Error != nil {
 				dialog.ShowError(result.Error, parentWindow)
 			} else {
-				parentWindow.SetContent(NewLobbySelectionWidget(env, parentWindow))
+				parentWindow.SetContent(widgets.NewLobbySelectionWidget(env, parentWindow))
 			}
 		}
 	})

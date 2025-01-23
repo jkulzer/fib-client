@@ -14,11 +14,10 @@ import (
 	//
 	"github.com/rs/zerolog/log"
 
+	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
-	"github.com/jkulzer/fib-client/helpers"
-	"github.com/jkulzer/fib-client/widgets/hider"
+	"github.com/jkulzer/fib-client/hiderWidget"
 
-	// "github.com/jkulzer/fib-client/models"
 	"github.com/jkulzer/fib-server/sharedModels"
 )
 
@@ -31,14 +30,14 @@ func NewHiderWidget(env env.Env, parentWindow fyne.Window) *HiderWidget {
 	w := &HiderWidget{}
 	w.ExtendBaseWidget(w)
 	w.content = container.NewVBox()
-	gamePhase := helpers.GetGamePhase(env, parentWindow)
+	gamePhase := client.GetGamePhase(env, parentWindow)
 
 	log.Info().Msg("game phase of lobby is " + fmt.Sprint(gamePhase))
 	switch gamePhase {
 	case sharedModels.PhaseBeforeStart:
-		w.content = container.NewVBox(hider.NewHiderStartPhaseWidget(env, parentWindow))
+		w.content = container.NewVBox(NewReadinessWidget(env, parentWindow))
 	case sharedModels.PhaseRun:
-		w.content = container.NewVBox(hider.NewHiderRunPhaseWidget(env, parentWindow))
+		w.content = container.NewVBox(hiderWidget.NewRunPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseLocationNarrowing:
 	case sharedModels.PhaseEndgame:
 	case sharedModels.PhaseFinished:

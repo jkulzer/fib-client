@@ -75,7 +75,9 @@ func NewRoleSelectionWidget(env env.Env, parentWindow fyne.Window, validatedLobb
 									if err != nil {
 										parentWindow.SetContent(container.NewVBox(NewLobbySelectionWidget(env, parentWindow)))
 									} else {
-										parentWindow.SetContent(container.NewVBox(NewHiderWidget(env, parentWindow)))
+										center := NewHiderWidget(env, parentWindow)
+										gameFrame := NewGameFrameWidget(env, parentWindow, center)
+										parentWindow.SetContent(gameFrame)
 									}
 								})
 							} else if role == sharedModels.Seeker {
@@ -85,11 +87,16 @@ func NewRoleSelectionWidget(env env.Env, parentWindow fyne.Window, validatedLobb
 									if err != nil {
 										parentWindow.SetContent(container.NewVBox(NewLobbySelectionWidget(env, parentWindow)))
 									} else {
-										parentWindow.SetContent(container.NewVBox(NewSeekerWidget(env, parentWindow)))
+										center := NewSeekerWidget(env, parentWindow)
+										gameFrame := NewGameFrameWidget(env, parentWindow, center)
+										parentWindow.SetContent(gameFrame)
 									}
 								})
 							} else {
-								log.Err(nil).Msg("Reached unreachable state in role selection")
+								message := "Reached unreachable state in role selection"
+								log.Err(nil).Msg(message)
+								w.content = container.NewVBox(widget.NewLabel(message))
+								return w
 							}
 							w.content.Add(container.NewVBox(button))
 						}
@@ -127,6 +134,7 @@ func HandleRoleSelection(env env.Env, validatedLobbyToken string, parentWindow f
 		dialog.ShowError(err, parentWindow)
 		return err
 	}
+
 	req, err := http.NewRequest("POST", env.Url+"/lobby/"+validatedLobbyToken+"/selectRole", roleReader)
 	if err != nil {
 		log.Err(err).Msg(fmt.Sprint(err))
@@ -140,29 +148,25 @@ func HandleRoleSelection(env env.Env, validatedLobbyToken string, parentWindow f
 		log.Err(err).Msg(fmt.Sprint(err))
 		dialog.ShowError(err, parentWindow)
 	}
+
 	switch res.StatusCode {
 	case http.StatusOK:
+		appConfig.Role = role
+		result := env.DB.Save(&appConfig)
+		if result.Error != nil {
+			log.Err(result.Error).Msg("failed to save roles in db")
+			dialog.ShowError(result.Error, parentWindow)
+			return err
+		}
 		return nil
 	case http.StatusConflict:
 		error := errors.New("This role has already been selected")
 		log.Err(err).Msg("")
 		dialog.ShowError(error, parentWindow)
+		return err
 	default:
 		error := errors.New("HTTP request failed with code " + fmt.Sprint(res.StatusCode))
 		dialog.ShowError(error, parentWindow)
 		return err
 	}
-	if err != nil {
-		log.Err(err).Msg("Request for role selection failed")
-		dialog.ShowError(err, parentWindow)
-		return err
-	}
-	appConfig.Role = sharedModels.Seeker
-	result := env.DB.Save(&appConfig)
-	if result.Error != nil {
-		log.Err(result.Error).Msg("failed to save roles in db")
-		dialog.ShowError(result.Error, parentWindow)
-		return err
-	}
-	return nil
 }

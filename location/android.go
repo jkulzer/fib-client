@@ -1,6 +1,11 @@
+//go:build android
+// +build android
+
 package location
 
 import (
+	"github.com/paulmach/orb"
+
 	"encoding/json"
 
 	fyne "fyne.io/fyne/v2"
@@ -9,6 +14,7 @@ import (
 )
 
 /*
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -21,7 +27,7 @@ type location struct {
 	Lon float64 `json:"lon"`
 }
 
-func GetLocation(parentWindow fyne.Window) (lat float64, lon float64) {
+func GetLocation(parentWindow fyne.Window) (orb.Point, error) {
 	var locationStruct location
 	var locationJsonString string
 	driver.RunNative(func(ctx interface{}) error {
@@ -37,5 +43,9 @@ func GetLocation(parentWindow fyne.Window) (lat float64, lon float64) {
 		return nil
 	})
 
-	return locationStruct.Lat, locationStruct.Lon
+	var point orb.Point
+	point[0] = locationStruct.Lon
+	point[1] = locationStruct.Lat
+
+	return point, nil
 }

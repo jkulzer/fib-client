@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.5.3
 	github.com/google/uuid v1.6.0
 	github.com/jkulzer/fib-server v0.0.0-20250111011744-575c4a898be6
+	github.com/paulmach/orb v0.1.3
 	github.com/rs/zerolog v1.33.0
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12

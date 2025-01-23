@@ -17,9 +17,9 @@ import (
 	"github.com/jkulzer/fib-client/models"
 )
 
-func InitDB(app fyne.App) env.Env {
+func InitDB(app fyne.App, subPath string) env.Env {
 
-	dbPathUri := storage.NewFileURI(filepath.Join(app.Storage().RootURI().Path(), "sqlite.db"))
+	dbPathUri := storage.NewFileURI(filepath.Join(app.Storage().RootURI().Path(), subPath+".db"))
 
 	fmt.Println("dev.jkulzer.findinberlin " + dbPathUri.Path())
 
