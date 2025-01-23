@@ -1,4 +1,4 @@
-package hiderWidget
+package widgets
 
 import (
 	fyne "fyne.io/fyne/v2"
@@ -17,13 +17,13 @@ import (
 	// "github.com/jkulzer/fib-server/sharedModels"
 )
 
-type NarrowingPhaseWidget struct {
+type HiderNarrowingPhaseWidget struct {
 	widget.BaseWidget
 	content *fyne.Container
 }
 
-func NewNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *NarrowingPhaseWidget {
-	w := &NarrowingPhaseWidget{}
+func NewHiderNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderNarrowingPhaseWidget {
+	w := &HiderNarrowingPhaseWidget{}
 	w.ExtendBaseWidget(w)
 
 	w.content = container.NewVBox()
@@ -31,6 +31,6 @@ func NewNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *NarrowingPh
 	return w
 }
 
-func (w *NarrowingPhaseWidget) CreateRenderer() fyne.WidgetRenderer {
+func (w *HiderNarrowingPhaseWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(w.content)
 }

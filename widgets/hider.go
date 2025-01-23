@@ -16,7 +16,6 @@ import (
 
 	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
-	"github.com/jkulzer/fib-client/hiderWidget"
 
 	"github.com/jkulzer/fib-server/sharedModels"
 )
@@ -37,7 +36,7 @@ func NewHiderWidget(env env.Env, parentWindow fyne.Window) *HiderWidget {
 	case sharedModels.PhaseBeforeStart:
 		w.content = container.NewVBox(NewReadinessWidget(env, parentWindow))
 	case sharedModels.PhaseRun:
-		w.content = container.NewVBox(hiderWidget.NewRunPhaseWidget(env, parentWindow))
+		w.content = container.NewVBox(NewHiderRunPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseLocationNarrowing:
 	case sharedModels.PhaseEndgame:
 	case sharedModels.PhaseFinished:

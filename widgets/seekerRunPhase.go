@@ -1,4 +1,4 @@
-package seekerWidget
+package widgets
 
 import (
 	fyne "fyne.io/fyne/v2"
@@ -17,13 +17,13 @@ import (
 	"github.com/jkulzer/fib-server/sharedModels"
 )
 
-type RunPhaseWidget struct {
+type SeekerRunPhaseWidget struct {
 	widget.BaseWidget
 	content *fyne.Container
 }
 
-func NewRunPhaseWidget(env env.Env, parentWindow fyne.Window) *RunPhaseWidget {
-	w := &RunPhaseWidget{}
+func NewSeekerRunPhaseWidget(env env.Env, parentWindow fyne.Window) *SeekerRunPhaseWidget {
+	w := &SeekerRunPhaseWidget{}
 	w.ExtendBaseWidget(w)
 	w.content = container.NewVBox(widget.NewLabel("Time until hiding phase ends:"))
 
@@ -58,6 +58,6 @@ func NewRunPhaseWidget(env env.Env, parentWindow fyne.Window) *RunPhaseWidget {
 	return w
 }
 
-func (w *RunPhaseWidget) CreateRenderer() fyne.WidgetRenderer {
+func (w *SeekerRunPhaseWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(w.content)
 }

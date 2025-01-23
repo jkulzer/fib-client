@@ -17,7 +17,6 @@ import (
 
 	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
-	"github.com/jkulzer/fib-client/seekerWidget"
 	// "github.com/jkulzer/fib-client/models"
 	"github.com/jkulzer/fib-server/sharedModels"
 )
@@ -38,7 +37,7 @@ func NewSeekerWidget(env env.Env, parentWindow fyne.Window) *SeekerWidget {
 	case sharedModels.PhaseBeforeStart:
 		w.content = container.NewVBox(NewReadinessWidget(env, parentWindow))
 	case sharedModels.PhaseRun:
-		w.content = container.NewVBox(seeker.NewRunPhaseWidget(env, parentWindow))
+		w.content = container.NewVBox(NewSeekerRunPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseLocationNarrowing:
 	case sharedModels.PhaseEndgame:
 	case sharedModels.PhaseFinished:

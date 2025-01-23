@@ -16,9 +16,6 @@ import (
 	"github.com/jkulzer/fib-client/env"
 	"github.com/jkulzer/fib-client/helpers"
 
-	"github.com/jkulzer/fib-client/hiderWidget"
-	"github.com/jkulzer/fib-client/seekerWidget"
-
 	"github.com/jkulzer/fib-server/sharedModels"
 )
 
@@ -84,12 +81,12 @@ func NewReadinessWidget(env env.Env, parentWindow fyne.Window) *ReadinessWidget 
 			if readiness == true {
 				switch appConfig.Role {
 				case sharedModels.Hider:
-					hiderRunPhaseWidget := hiderWidget.NewRunPhaseWidget(env, parentWindow)
+					hiderRunPhaseWidget := NewHiderRunPhaseWidget(env, parentWindow)
 					gameFrame := NewGameFrameWidget(env, parentWindow, hiderRunPhaseWidget)
 					parentWindow.SetContent(gameFrame)
 					return
 				case sharedModels.Seeker:
-					seekerRunPhaseWidget := seekerWidget.NewRunPhaseWidget(env, parentWindow)
+					seekerRunPhaseWidget := NewSeekerRunPhaseWidget(env, parentWindow)
 					gameFrame := NewGameFrameWidget(env, parentWindow, seekerRunPhaseWidget)
 					parentWindow.SetContent(gameFrame)
 					return

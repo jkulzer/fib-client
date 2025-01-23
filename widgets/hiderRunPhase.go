@@ -1,4 +1,4 @@
-package hiderWidget
+package widgets
 
 import (
 	fyne "fyne.io/fyne/v2"
@@ -14,21 +14,25 @@ import (
 
 	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
-	"github.com/jkulzer/fib-client/gameFrame"
+	"github.com/jkulzer/fib-client/location"
 
 	"github.com/jkulzer/fib-server/sharedModels"
 )
 
-type RunPhaseWidget struct {
+type HiderRunPhaseWidget struct {
 	widget.BaseWidget
 	content *fyne.Container
 }
 
-func NewRunPhaseWidget(env env.Env, parentWindow fyne.Window) *RunPhaseWidget {
-	w := &RunPhaseWidget{}
+func NewHiderRunPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderRunPhaseWidget {
+	w := &HiderRunPhaseWidget{}
 	w.ExtendBaseWidget(w)
 
-	w.content = container.NewVBox()
+	saveLocationButton := widget.NewButton("Save Location", func() {
+		location.GetLocation(parentWindow)
+	})
+
+	w.content = container.NewVBox(saveLocationButton)
 
 	runStartTime, err := client.RunStartTime(env, parentWindow)
 	if err != nil {
@@ -65,8 +69,8 @@ func NewRunPhaseWidget(env env.Env, parentWindow fyne.Window) *RunPhaseWidget {
 			gamePhase := client.GetGamePhase(env, parentWindow)
 			if gamePhase == sharedModels.PhaseLocationNarrowing {
 
-				narrowingPhaseWidget := NewNarrowingPhaseWidget(env, parentWindow)
-				gameFrame := gameFrame.NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
+				narrowingPhaseWidget := NewHiderNarrowingPhaseWidget(env, parentWindow)
+				gameFrame := NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
 				parentWindow.SetContent(gameFrame)
 			}
 
@@ -76,6 +80,6 @@ func NewRunPhaseWidget(env env.Env, parentWindow fyne.Window) *RunPhaseWidget {
 	return w
 }
 
-func (w *RunPhaseWidget) CreateRenderer() fyne.WidgetRenderer {
+func (w *HiderRunPhaseWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(w.content)
 }
