@@ -39,6 +39,8 @@ func NewSeekerWidget(env env.Env, parentWindow fyne.Window) *SeekerWidget {
 	case sharedModels.PhaseRun:
 		w.content = container.NewVBox(NewSeekerRunPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseLocationNarrowing:
+		w.content = container.NewStack(NewSeekerNarrowingPhaseWidget(env, parentWindow))
+		parentWindow.SetContent(w.content)
 	case sharedModels.PhaseEndgame:
 	case sharedModels.PhaseFinished:
 	default:

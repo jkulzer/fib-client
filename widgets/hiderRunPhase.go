@@ -28,11 +28,28 @@ func NewHiderRunPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderRunPhas
 	w := &HiderRunPhaseWidget{}
 	w.ExtendBaseWidget(w)
 
-	saveLocationButton := widget.NewButton("Save Location", func() {
-		location.GetLocation(parentWindow)
+	saveLocationButton := widget.NewButton("Save Hiding Zone", func() {
+		go func() {
+			point, err := location.GetLocation(parentWindow)
+			if err != nil {
+				log.Err(err).Msg(fmt.Sprint(err) + " failed getting location in run phase widget")
+				dialog.ShowError(err, parentWindow)
+			}
+			err = client.ValidateAndSetHidingZone(env, parentWindow, point)
+			if err != nil {
+				log.Err(err).Msg(fmt.Sprint(err))
+				dialog.ShowError(err, parentWindow)
+				return
+			}
+			dialog.ShowInformation("Location", "Saved hiding zone location", parentWindow)
+
+		}()
 	})
 
-	w.content = container.NewVBox(saveLocationButton)
+	w.content = container.NewVBox(
+		widget.NewLabel("You need to save a hiding location before the hiding time ends.\nCurrently, the app can't request a new location, you need to use another app that uses GPS to get your current location"),
+		saveLocationButton,
+	)
 
 	runStartTime, err := client.RunStartTime(env, parentWindow)
 	if err != nil {
@@ -68,12 +85,12 @@ func NewHiderRunPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderRunPhas
 
 			gamePhase := client.GetGamePhase(env, parentWindow)
 			if gamePhase == sharedModels.PhaseLocationNarrowing {
-
+				log.Info().Msg("now in location narrowing phase")
 				narrowingPhaseWidget := NewHiderNarrowingPhaseWidget(env, parentWindow)
 				gameFrame := NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
 				parentWindow.SetContent(gameFrame)
+				return
 			}
-
 		}
 	}()
 

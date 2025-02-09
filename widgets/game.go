@@ -39,13 +39,13 @@ func NewGameWidget(env env.Env, parentWindow fyne.Window) *GameWidget {
 	if appConfig.Role == sharedModels.Hider {
 		log.Info().Msg("Found hider role in database")
 		center := NewHiderWidget(env, parentWindow)
-		w.content = container.NewVBox(NewGameFrameWidget(env, parentWindow, center))
+		w.content = container.NewStack(NewGameFrameWidget(env, parentWindow, center))
 	} else if appConfig.Role == sharedModels.Seeker {
 		center := NewSeekerWidget(env, parentWindow)
-		w.content = container.NewVBox(NewGameFrameWidget(env, parentWindow, center))
+		w.content = container.NewStack(NewGameFrameWidget(env, parentWindow, center))
 	} else {
 		center := NewRoleSelectionWidget(env, parentWindow, appConfig.LobbyToken)
-		w.content = container.NewVBox(NewGameFrameWidget(env, parentWindow, center))
+		w.content = container.NewStack(NewGameFrameWidget(env, parentWindow, center))
 	}
 
 	return w
@@ -78,18 +78,24 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 	})
 
 	leaveLobbyButton := widget.NewButton("Leave Lobby", func() {
-		appConfig, err := helpers.GetAppConfig(env, parentWindow)
-		if err != nil {
-			log.Err(err).Msg("failed to get app config while leaving lobby")
-		} else {
-			appConfig.LobbyToken = ""
-			result := env.DB.Save(&appConfig)
-			if result.Error != nil {
-				dialog.ShowError(result.Error, parentWindow)
-			} else {
-				parentWindow.SetContent(NewLobbySelectionWidget(env, parentWindow))
+		confirmDialog := dialog.NewConfirm("Leave lobby", "Are you sure you want to abandon this lobby?", func(confirmed bool) {
+			if confirmed {
+				appConfig, err := helpers.GetAppConfig(env, parentWindow)
+				if err != nil {
+					log.Err(err).Msg("failed to get app config while leaving lobby")
+				} else {
+					appConfig.LobbyToken = ""
+					result := env.DB.Save(&appConfig)
+					if result.Error != nil {
+						dialog.ShowError(result.Error, parentWindow)
+					} else {
+						parentWindow.SetContent(NewLobbySelectionWidget(env, parentWindow))
+					}
+				}
 			}
-		}
+
+		}, parentWindow)
+		confirmDialog.Show()
 	})
 
 	var loginInfo models.LoginInfo

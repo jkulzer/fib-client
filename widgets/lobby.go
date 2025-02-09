@@ -80,7 +80,6 @@ func NewLobbySelectionWidget(env env.Env, parentWindow fyne.Window) *LobbySelect
 		req, err := http.NewRequest("POST", env.Url+"/lobby/create", nil)
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
-
 		}
 		// error handing already handled since it shows a popup
 		loginInfo, err := helpers.GetAppConfig(env, parentWindow)

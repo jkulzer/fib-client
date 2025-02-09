@@ -55,6 +55,22 @@ func NewSeekerRunPhaseWidget(env env.Env, parentWindow fyne.Window) *SeekerRunPh
 		}
 	}()
 
+	go func() {
+		for {
+			timer := time.NewTimer(2 * time.Second)
+			<-timer.C
+
+			gamePhase := client.GetGamePhase(env, parentWindow)
+			if gamePhase == sharedModels.PhaseLocationNarrowing {
+				log.Info().Msg("now in location narrowing phase")
+				narrowingPhaseWidget := NewSeekerNarrowingPhaseWidget(env, parentWindow)
+				gameFrame := NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
+				parentWindow.SetContent(gameFrame)
+				return
+			}
+		}
+	}()
+
 	return w
 }
 

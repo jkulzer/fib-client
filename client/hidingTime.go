@@ -26,9 +26,6 @@ func RunStartTime(env env.Env, parentWindow fyne.Window) (time.Time, error) {
 	if err != nil {
 		return currentTime, err
 	}
-	if err != nil {
-		return currentTime, err
-	}
 	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

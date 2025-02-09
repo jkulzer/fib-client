@@ -7,13 +7,11 @@ import (
 	// "fyne.io/fyne/v2/widget"
 
 	"github.com/jkulzer/fib-client/db"
-	"github.com/jkulzer/fib-client/location"
 	"github.com/jkulzer/fib-client/models"
 	"github.com/jkulzer/fib-client/widgets"
 
 	"github.com/rs/zerolog/log"
 
-	"fmt"
 	"os"
 )
 
@@ -32,7 +30,7 @@ func main() {
 	env := db.InitDB(app, dbSubpath)
 
 	env.Url = "http://localhost:3001"
-	// env.Url = "http://192.168.69.235:3001"
+	// env.Url = "http://192.168.69.230:3001"
 	// env.Url = "http://192.168.178.178:3001"
 	var loginInfo models.LoginInfo
 	result := env.DB.First(&loginInfo)
@@ -47,11 +45,6 @@ func main() {
 			w.SetContent(widgets.NewLobbyWidget(env, w))
 		}
 	}
-
-	go func() {
-		point, _ := location.GetLocation(w)
-		fmt.Println(point)
-	}()
 
 	w.ShowAndRun()
 }

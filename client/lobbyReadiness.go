@@ -24,31 +24,26 @@ func IsLobbyComplete(env env.Env, parentWindow fyne.Window) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if err == nil {
-		req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
-		res, err := http.DefaultClient.Do(req)
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+	switch res.StatusCode {
+	case http.StatusOK:
+		var responseStruct sharedModels.ReadinessResponse
+		responseBytes, err := helpers.ReadHttpResponse(res.Body)
+		if err != nil {
+			return false, err
+		}
+		err = json.Unmarshal(responseBytes, &responseStruct)
 		if err != nil {
 			return false, err
 		} else {
-			switch res.StatusCode {
-			case http.StatusOK:
-				var responseStruct sharedModels.ReadinessResponse
-				responseBytes, err := helpers.ReadHttpResponse(res.Body)
-				if err != nil {
-					return false, err
-				}
-				err = json.Unmarshal(responseBytes, &responseStruct)
-				if err != nil {
-					return false, err
-				} else {
-					return responseStruct.Ready, nil
-				}
-			default:
-				return false, errors.New("readyiness request failed with http status code " + fmt.Sprint(res.StatusCode))
-			}
+			return responseStruct.Ready, nil
 		}
-	} else {
-		return false, err
+	default:
+		return false, errors.New("readyiness request failed with http status code " + fmt.Sprint(res.StatusCode))
 	}
 }
 
