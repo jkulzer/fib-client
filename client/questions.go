@@ -244,3 +244,65 @@ func AskTrainservice(env env.Env, parentWindow fyne.Window, routeID osm.Relation
 		return err
 	}
 }
+
+func AskOrtsteilLastLetter(env env.Env, parentWindow fyne.Window) error {
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", env.Url+"/lobby/"+loginInfo.LobbyToken+"/questions/ortsteilLastLetter", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusBadRequest:
+		err := errors.New("Lobby doesn't exist. Bad Request.")
+		return err
+	case http.StatusForbidden:
+		err := errors.New("You are not the seeker and can't ask questions")
+		return err
+	default:
+		err := errors.New("asking ortsteil last letter question failed with http status code " + fmt.Sprint(res.StatusCode))
+		return err
+	}
+}
+
+func AskQuestion(env env.Env, parentWindow fyne.Window, questionUrl string, questionName string) error {
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", env.Url+"/lobby/"+loginInfo.LobbyToken+"/questions/"+questionUrl, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusBadRequest:
+		err := errors.New("Lobby doesn't exist. Bad Request.")
+		return err
+	case http.StatusForbidden:
+		err := errors.New("You are not the seeker and can't ask questions")
+		return err
+	default:
+		err := errors.New("asking " + questionName + " question failed with http status code " + fmt.Sprint(res.StatusCode))
+		return err
+	}
+}

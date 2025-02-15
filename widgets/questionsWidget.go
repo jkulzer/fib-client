@@ -19,7 +19,6 @@ import (
 	"github.com/jkulzer/fib-client/env"
 	"github.com/jkulzer/fib-client/location"
 	"github.com/jkulzer/fib-client/mapWidget"
-	// "github.com/jkulzer/fib-server/sharedModels"
 )
 
 type QuestionWidget struct {
@@ -51,7 +50,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 	// Matching questions
 	w.content.Add(widget.NewLabel("Matching"))
 	// question grid
-	matchingButtonsContainer := container.NewGridWithColumns(4)
+	matchingButtonsContainer := container.NewGridWithColumns(2)
 
 	// question buttons
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Same Bezirk", theme.Icon(theme.IconNameInfo), func() {
@@ -70,6 +69,15 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked same ortsteil")
+		refreshMap(env, parentWindow, mapWidgetPointer)
+	}))
+	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Ortsteil last letter", theme.Icon(theme.IconNameInfo), func() {
+		err := client.AskOrtsteilLastLetter(env, parentWindow)
+		if err != nil {
+			dialog.ShowError(err, parentWindow)
+			return
+		}
+		log.Debug().Msg("asked ortsteil last letter question")
 		refreshMap(env, parentWindow, mapWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Train Service", theme.Icon(theme.IconNameInfo), func() {
@@ -104,9 +112,34 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 	// add matching questions container
 	w.content.Add(matchingButtonsContainer)
 
+	w.content.Add(widget.NewLabel("Relative Questions"))
+	relativeButtonsContainer := container.NewGridWithColumns(2)
+	relativeButtonsContainer.Add(widget.NewButtonWithIcon("McDonald's Distance", theme.Icon(theme.IconNameInfo), func() {
+		err := client.AskQuestion(env, parentWindow, "closerToMcDonalds", "McDonald's Distance")
+		if err != nil {
+			dialog.ShowError(err, parentWindow)
+		}
+		refreshMap(env, parentWindow, mapWidgetPointer)
+	}))
+	relativeButtonsContainer.Add(widget.NewButtonWithIcon("IKEA Distance", theme.Icon(theme.IconNameInfo), func() {
+		err := client.AskQuestion(env, parentWindow, "closerToIkea", "IKEA Distance")
+		if err != nil {
+			dialog.ShowError(err, parentWindow)
+		}
+		refreshMap(env, parentWindow, mapWidgetPointer)
+	}))
+	relativeButtonsContainer.Add(widget.NewButtonWithIcon("Spree Distance", theme.Icon(theme.IconNameInfo), func() {
+		err := client.AskQuestion(env, parentWindow, "closerToSpree", "Spree Distance")
+		if err != nil {
+			dialog.ShowError(err, parentWindow)
+		}
+		refreshMap(env, parentWindow, mapWidgetPointer)
+	}))
+	w.content.Add(relativeButtonsContainer)
+
 	w.content.Add(widget.NewLabel("Thermometer"))
 	// question grid
-	thermometerButtonsContainer := container.NewGridWithColumns(4)
+	thermometerButtonsContainer := container.NewGridWithColumns(2)
 
 	thermometerButtonsContainer.Add(widget.NewButtonWithIcon("start 100m Thermometer", theme.Icon(theme.IconNameInfo), func() {
 		err := client.StartThermometer(env, parentWindow, 100)
@@ -127,7 +160,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 	// Radar questions
 	w.content.Add(widget.NewLabel("Radar"))
 	// question grid
-	radarButtonsContainer := container.NewGridWithColumns(4)
+	radarButtonsContainer := container.NewGridWithColumns(2)
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("200m Radar", theme.Icon(theme.IconNameRadioButton), func() {
 		AskRadarWithRadius(env, parentWindow, 200, mapWidgetPointer)
 	}))
@@ -171,6 +204,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 	}))
 	// add radar questions container
 	w.content.Add(radarButtonsContainer)
+	w.content = container.NewStack(container.NewVScroll(w.content))
 
 	return w
 }

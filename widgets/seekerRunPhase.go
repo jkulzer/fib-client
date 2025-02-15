@@ -41,7 +41,6 @@ func NewSeekerRunPhaseWidget(env env.Env, parentWindow fyne.Window) *SeekerRunPh
 	w.content.Add(text)
 
 	go func() {
-
 		for {
 			timer := time.NewTimer(16 * time.Millisecond)
 			<-timer.C
