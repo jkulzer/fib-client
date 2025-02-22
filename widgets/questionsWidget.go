@@ -26,7 +26,7 @@ type QuestionWidget struct {
 	content *fyne.Container
 }
 
-func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *mapWidget.Map) *QuestionWidget {
+func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *mapWidget.Map, historyWidgetPointer *HistoryWidget) *QuestionWidget {
 	w := &QuestionWidget{}
 	w.ExtendBaseWidget(w)
 	w.content = container.NewVBox()
@@ -60,7 +60,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked same bezirk")
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Same Ortsteil", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskSameOrtsteil(env, parentWindow)
@@ -69,7 +69,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked same ortsteil")
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Ortsteil last letter", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskOrtsteilLastLetter(env, parentWindow)
@@ -78,7 +78,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked ortsteil last letter question")
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Train Service", theme.Icon(theme.IconNameInfo), func() {
 		log.Info().Msg("asked train service question")
@@ -100,7 +100,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 					return
 				}
 				trainSelectDialog.Hide()
-				refreshMap(env, parentWindow, mapWidgetPointer)
+				refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 			})
 			dialogContent.Add(routeSelectionButton)
 		}
@@ -119,21 +119,21 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	relativeButtonsContainer.Add(widget.NewButtonWithIcon("IKEA Distance", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskQuestion(env, parentWindow, "closerToIkea", "IKEA Distance")
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	relativeButtonsContainer.Add(widget.NewButtonWithIcon("Spree Distance", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskQuestion(env, parentWindow, "closerToSpree", "Spree Distance")
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	w.content.Add(relativeButtonsContainer)
 
@@ -153,7 +153,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			dialog.ShowError(err, parentWindow)
 			return
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer)
+		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 	}))
 	w.content.Add(thermometerButtonsContainer)
 
@@ -162,25 +162,25 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 	// question grid
 	radarButtonsContainer := container.NewGridWithColumns(2)
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("200m Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 200, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 200, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("500m Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 500, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 500, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("1km Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 1000, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 1000, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("2.5km Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 2500, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 2500, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("5km Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 5000, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 5000, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("10km Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 10000, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 10000, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("15km Radar", theme.Icon(theme.IconNameRadioButton), func() {
-		AskRadarWithRadius(env, parentWindow, 15000, mapWidgetPointer)
+		AskRadarWithRadius(env, parentWindow, 15000, mapWidgetPointer, historyWidgetPointer)
 	}))
 	radarButtonsContainer.Add(widget.NewButtonWithIcon("??? Radar", theme.Icon(theme.IconNameRadioButton), func() {
 		// TODO
@@ -195,8 +195,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 					dialog.ShowError(err, parentWindow)
 					return
 				}
-				AskRadarWithRadius(env, parentWindow, radiusFloat, mapWidgetPointer)
-				mapWidgetPointer.Refresh()
+				AskRadarWithRadius(env, parentWindow, radiusFloat, mapWidgetPointer, historyWidgetPointer)
 			}
 		}
 		formDialog := dialog.NewForm("Enter radar radius in meters:", "Confirm", "Dismiss", formItems, callback, parentWindow)
@@ -213,17 +212,17 @@ func (w *QuestionWidget) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(w.content)
 }
 
-func AskRadarWithRadius(env env.Env, parentWindow fyne.Window, radius float64, mapWidgetPointer *mapWidget.Map) {
+func AskRadarWithRadius(env env.Env, parentWindow fyne.Window, radius float64, mapWidgetPointer *mapWidget.Map, historyWidgetPointer *HistoryWidget) {
 	err := client.AskRadar(env, parentWindow, radius)
 	fmt.Println("asked radar with radius", radius)
 	if err != nil {
 		dialog.ShowError(err, parentWindow)
 		return
 	}
-	refreshMap(env, parentWindow, mapWidgetPointer)
+	refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
 }
 
-func refreshMap(env env.Env, parentWindow fyne.Window, mapWidgetPointer *mapWidget.Map) {
+func refreshMap(env env.Env, parentWindow fyne.Window, mapWidgetPointer *mapWidget.Map, historyWidgetPointer *HistoryWidget) {
 	mapData, err := client.GetMapData(env, parentWindow)
 	if err != nil {
 		dialog.ShowError(err, parentWindow)
@@ -236,4 +235,7 @@ func refreshMap(env env.Env, parentWindow fyne.Window, mapWidgetPointer *mapWidg
 
 	mapWidgetPointer.SetFeatureCollection(fc)
 	mapWidgetPointer.Refresh()
+
+	// historyWidgetPointer.DoRefresh()
+	historyWidgetPointer.Refresh()
 }

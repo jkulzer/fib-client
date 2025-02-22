@@ -11,6 +11,8 @@ import (
 
 	"github.com/nfnt/resize"
 
+	"github.com/rs/zerolog/log"
+
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
 	"github.com/paulmach/orb/project"
@@ -26,7 +28,6 @@ import (
 
 	"github.com/llgcode/draw2d"
 	"github.com/llgcode/draw2d/draw2dimg"
-	// "github.com/llgcode/draw2d/samples/geometry"
 )
 
 const tileSize = 256
@@ -248,15 +249,13 @@ func (m *Map) CreateRenderer() fyne.WidgetRenderer {
 
 	// customOverlay := m.geoJSONOverlay()
 
-	// c := container.NewStack(canvas.NewRaster(m.draw), customOverlay, container.NewPadded(overlay))
 	c := container.NewStack(canvas.NewRaster(m.draw), canvas.NewRaster(m.overlay), container.NewPadded(overlay))
 	// c := customOverlay
-	fmt.Println("creating renderer")
 	return widget.NewSimpleRenderer(c)
 }
 
 func (m *Map) draw(w, h int) image.Image {
-	fmt.Println("drawing")
+	log.Debug().Msg("drawing map")
 	scale := 1
 	tileSize := tileSize
 	// TODO use retina tiles once OSM supports it in their server (text scaling issues)...
@@ -308,9 +307,7 @@ func (m *Map) draw(w, h int) image.Image {
 	}
 
 	startTime := time.Now()
-	fmt.Println("overlay drawing took ", time.Since(startTime))
-
-	fmt.Println("drawed")
+	log.Debug().Msg(fmt.Sprint("overlay drawing took ", time.Since(startTime)))
 
 	return m.pixels
 }
@@ -506,13 +503,13 @@ func renderPolygon(featureGeometry orb.Geometry, gc *draw2dimg.GraphicContext, m
 		if ringIndex < ringListLen-1 {
 			nextRing := rings[ringIndex+1]
 			if ring[len(ring)-1] == nextRing[len(nextRing)-1] {
-				fmt.Println("reversed")
+				log.Debug().Msg("reversed")
 				rings[ringIndex+1].Reverse()
 			} else if ring[0] == nextRing[0] {
-				fmt.Println("reversed")
+				log.Debug().Msg("reversed")
 				ring.Reverse()
 			} else if ring[0] == nextRing[len(nextRing)-1] {
-				fmt.Println("reversed")
+				log.Debug().Msg("reversed")
 				ring.Reverse()
 				rings[ringIndex+1].Reverse()
 			}

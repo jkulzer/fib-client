@@ -12,22 +12,43 @@ import (
 	//
 	// "github.com/rs/zerolog/log"
 
+	"github.com/paulmach/orb/geojson"
+
 	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
 	"github.com/jkulzer/fib-client/location"
+	"github.com/jkulzer/fib-client/mapWidget"
 	// "github.com/jkulzer/fib-server/sharedModels"
 )
 
 type HiderNarrowingPhaseWidget struct {
 	widget.BaseWidget
 	content *fyne.Container
+	fc      *geojson.FeatureCollection
 }
 
 func NewHiderNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderNarrowingPhaseWidget {
 	w := &HiderNarrowingPhaseWidget{}
 	w.ExtendBaseWidget(w)
 
-	w.content = container.NewVBox()
+	w.content = container.NewStack()
+
+	mapData, err := client.GetMapData(env, parentWindow)
+	if err != nil {
+		dialog.ShowError(err, parentWindow)
+		return w
+	}
+
+	w.fc, err = geojson.UnmarshalFeatureCollection(mapData)
+	if err != nil {
+		dialog.ShowError(err, parentWindow)
+		return w
+	}
+
+	mapWidgetInstance := mapWidget.NewMap(w.fc)
+	historyWidgetInstance := NewHistoryWidget(env, parentWindow)
+	cardsWidgetInstance := NewCardsWidget(env, parentWindow)
+
 	setLocationButton := widget.NewButton("Set Location", func() {
 		go func() {
 			locationPoint, err := location.GetLocation(parentWindow)
@@ -41,7 +62,15 @@ func NewHiderNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderN
 			}
 		}()
 	})
-	w.content.Add(setLocationButton)
+
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Map", mapWidgetInstance),
+		container.NewTabItem("Cards", cardsWidgetInstance),
+		container.NewTabItem("History", historyWidgetInstance),
+		container.NewTabItem("Location", container.NewVBox(setLocationButton)),
+	)
+	tabs.SetTabLocation(container.TabLocationBottom)
+	w.content.Add(tabs)
 
 	return w
 }

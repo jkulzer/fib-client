@@ -83,15 +83,17 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 				appConfig, err := helpers.GetAppConfig(env, parentWindow)
 				if err != nil {
 					log.Err(err).Msg("failed to get app config while leaving lobby")
-				} else {
-					appConfig.LobbyToken = ""
-					result := env.DB.Save(&appConfig)
-					if result.Error != nil {
-						dialog.ShowError(result.Error, parentWindow)
-					} else {
-						parentWindow.SetContent(NewLobbySelectionWidget(env, parentWindow))
-					}
+					return
 				}
+				appConfig.LobbyToken = ""
+				result := env.DB.Save(&appConfig)
+				if result.Error != nil {
+					dialog.ShowError(result.Error, parentWindow)
+					return
+				}
+				center := NewLobbySelectionWidget(env, parentWindow)
+				gameFrame := NewGameFrameWidget(env, parentWindow, center)
+				parentWindow.SetContent(gameFrame)
 			}
 
 		}, parentWindow)
@@ -105,8 +107,13 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 		dialog.ShowError(result.Error, parentWindow)
 	}
 
+	copyTokenButton := widget.NewButton("Copy code", func() {
+		fyne.Clipboard.SetContent(parentWindow.Clipboard(), loginInfo.LobbyToken)
+	})
+
 	top := container.NewHBox(
 		widget.NewLabel("Lobby code: "+loginInfo.LobbyToken),
+		copyTokenButton,
 		logoutButton,
 		leaveLobbyButton,
 	)

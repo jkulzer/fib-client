@@ -34,7 +34,7 @@ func GetHistory(env env.Env, parentWindow fyne.Window) (sharedModels.History, er
 	if err != nil {
 		return sharedModels.History{}, err
 	}
-	var historyResponse sharedModels.HistoryResponse
+	var historyResponse sharedModels.History
 	err = json.Unmarshal(byteBody, &historyResponse)
 	if err != nil {
 		return sharedModels.History{}, err
@@ -42,7 +42,7 @@ func GetHistory(env env.Env, parentWindow fyne.Window) (sharedModels.History, er
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		return historyResponse.History, nil
+		return historyResponse, nil
 	case http.StatusBadRequest:
 		return sharedModels.History{}, errors.New("Lobby doesn't exist")
 	case http.StatusForbidden:

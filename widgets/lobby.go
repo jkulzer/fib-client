@@ -118,7 +118,17 @@ func NewLobbySelectionWidget(env env.Env, parentWindow fyne.Window) *LobbySelect
 						dialog.ShowError(err, parentWindow)
 					} else {
 						log.Info().Msg("created lobby " + responseStruct.LobbyToken)
-						dialog.ShowInformation("Lobby Creation", "Created lobby with token \""+responseStruct.LobbyToken+"\"", parentWindow)
+						creationDialog := dialog.NewCustom("Lobby Creation", "Close", container.NewVBox(
+							widget.NewLabel("Created lobby with token \""+responseStruct.LobbyToken+"\""),
+							widget.NewButton("Copy to clipboard", func() {
+								fyne.Clipboard.SetContent(parentWindow.Clipboard(), responseStruct.LobbyToken)
+							}),
+						),
+							parentWindow,
+						)
+						creationDialog.Show()
+
+						// dialog.ShowInformation("Lobby Creation", "Created lobby with token \""+responseStruct.LobbyToken+"\"", parentWindow)
 						joinLobby(responseStruct.LobbyToken, parentWindow, env)
 					}
 

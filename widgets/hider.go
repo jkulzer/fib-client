@@ -38,7 +38,7 @@ func NewHiderWidget(env env.Env, parentWindow fyne.Window) *HiderWidget {
 	case sharedModels.PhaseRun:
 		w.content = container.NewVBox(NewHiderRunPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseLocationNarrowing:
-		w.content = container.NewVBox(NewHiderNarrowingPhaseWidget(env, parentWindow))
+		w.content = container.NewStack(NewHiderNarrowingPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseEndgame:
 	case sharedModels.PhaseFinished:
 	default:

@@ -4,6 +4,7 @@
 package location
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -29,25 +30,30 @@ func GetLocation(parentWindow fyne.Window) (orb.Point, error) {
 	}
 	callback := func(boolean bool) {
 		fmt.Println(boolean)
-		formDone <- true
+		formDone <- boolean
 	}
 	dialog.ShowForm("select location", "confirm", "dismiss", content, callback, parentWindow)
 
-	<-formDone
+	responseType := <-formDone
 
-	var point orb.Point
+	if responseType {
+		var point orb.Point
 
-	lat, err := strconv.ParseFloat(latEntry.Text, 64)
-	if err != nil {
-		return point, err
+		lat, err := strconv.ParseFloat(latEntry.Text, 64)
+		if err != nil {
+			return point, err
+		}
+		lon, err := strconv.ParseFloat(lonEntry.Text, 64)
+		if err != nil {
+			return point, err
+		}
+
+		point[0] = lon
+		point[1] = lat
+
+		return point, nil
+	} else {
+		return orb.Point{}, errors.New("set a location to continue")
 	}
-	lon, err := strconv.ParseFloat(lonEntry.Text, 64)
-	if err != nil {
-		return point, err
-	}
 
-	point[0] = lon
-	point[1] = lat
-
-	return point, nil
 }
