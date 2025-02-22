@@ -60,8 +60,7 @@ func (w *CardsWidget) CreateRenderer() fyne.WidgetRenderer {
 			if len(draw.Cards) < 1 {
 				dialog.ShowInformation("Card draw", "There is no draw in progress", w.parentWindow)
 			} else {
-				fmt.Println(draw.ToPick)
-				cardSelectDialog(w, w.env, w.parentWindow, draw.ToPick)
+				cardSelectDialog(w.env, w.parentWindow)
 			}
 		}),
 	)
@@ -85,19 +84,31 @@ func (w *CardsWidget) CreateRenderer() fyne.WidgetRenderer {
 							dialog.ShowError(err, w.parentWindow)
 							return
 						}
-						cardSelectDialog(w, w.env, w.parentWindow, cardAction.CardsToPick)
+						cardSelectDialog(w.env, w.parentWindow)
 					}),
 				),
 			)
 		}
 		w.content.Add(drawContainer)
 	}
+	hiderHand, err := client.GetHiderHand(w.env, w.parentWindow)
+	if err != nil {
+		log.Err(err).Msg("failed getting hider hand")
+		dialog.ShowError(err, w.parentWindow)
+		return widget.NewSimpleRenderer(container.NewScroll(w.content))
+	}
+	cardGrid := container.NewGridWithRows(2)
+	for _, handCard := range hiderHand.List {
+		cardGrid.Add(NewCardWidget(handCard, DisplayCardWidget, nil, 0))
+	}
+	w.content.Add(widget.NewLabel("Your hand:"))
+	w.content.Add(cardGrid)
 	return widget.NewSimpleRenderer(container.NewScroll(w.content))
 }
 
-func cardSelectDialog(w *CardsWidget, env env.Env, parentWindow fyne.Window, maxCards uint) {
-	drawnCardsContainer := NewCardSelectWidget(env, parentWindow, maxCards)
-	cardDrawDialog := dialog.NewCustom("Drawn cards", "dismiss", drawnCardsContainer, w.parentWindow)
+func cardSelectDialog(env env.Env, parentWindow fyne.Window) {
+	drawnCardsContainer := NewCardSelectWidget(env, parentWindow)
+	cardDrawDialog := dialog.NewCustom("Drawn cards", "dismiss", drawnCardsContainer, parentWindow)
 	cardDrawDialog.Resize(fyne.NewSize(300, 600))
 	cardDrawDialog.Show()
 }
@@ -105,6 +116,7 @@ func cardSelectDialog(w *CardsWidget, env env.Env, parentWindow fyne.Window, max
 type CardWidget struct {
 	widget.BaseWidget
 	content          *fyne.Container
+	cardIndex        uint
 	selected         bool
 	selectedText     *widget.Label
 	widgetType       CardWidgetType
@@ -117,19 +129,25 @@ type CardWidgetType int
 const (
 	DrawCardWidget CardWidgetType = iota
 	PlayCardWidget
+	DisplayCardWidget
 )
 
-func NewCardWidget(card sharedModels.Card, widgetType CardWidgetType, cardSelectWidget *CardSelectWidget) *CardWidget {
-	w := &CardWidget{}
+func NewCardWidget(card sharedModels.Card, widgetType CardWidgetType, cardSelectWidget *CardSelectWidget, cardIndex uint) *CardWidget {
+	w := &CardWidget{
+		cardIndex:        cardIndex,
+		content:          container.NewVBox(),
+		selectedText:     widget.NewLabel("selected"),
+		card:             card,
+		cardSelectWidget: cardSelectWidget,
+		widgetType:       widgetType,
+	}
 	w.ExtendBaseWidget(w)
+
 	title := widget.NewLabel(card.Title)
 	title.TextStyle = fyne.TextStyle{
 		Bold:      true,
 		Underline: true,
 	}
-	w.card = card
-	w.cardSelectWidget = cardSelectWidget
-	w.widgetType = widgetType
 	// title.Wrapping = fyne.TextWrapWord
 	var description *widget.Label
 	if w.card.Description != "" {
@@ -137,10 +155,10 @@ func NewCardWidget(card sharedModels.Card, widgetType CardWidgetType, cardSelect
 	} else {
 		description = widget.NewLabel("No Description")
 	}
+	w.content.Add(title)
+	w.content.Add(description)
 
 	description.Wrapping = fyne.TextWrapWord
-	w.content = container.NewVBox(title, description)
-	w.selectedText = widget.NewLabel("selected")
 
 	return w
 }
@@ -159,29 +177,31 @@ func (w *CardWidget) Tapped(*fyne.PointEvent) {
 		if w.selected {
 			w.selected = false
 			w.content.Remove(w.selectedText)
-			w.cardSelectWidget.RemoveCardFromPool(w.card)
+			w.cardSelectWidget.RemoveCardFromPool(w.card.IDInDB)
 		} else {
 			w.selected = true
 			w.content.Add(w.selectedText)
-			w.cardSelectWidget.AddCardToPool(w.card)
+			w.cardSelectWidget.AddCardToPool(w.card.IDInDB)
 		}
+		w.cardSelectWidget.Refresh()
+		w.cardSelectWidget.BaseWidget.Refresh()
+		w.Refresh()
+		w.BaseWidget.Refresh()
 	}
-	w.cardSelectWidget.Refresh()
 }
 
 type CardSelectWidget struct {
 	widget.BaseWidget
-	content      *fyne.Container
-	env          env.Env
-	parentWindow fyne.Window
-	cards        []sharedModels.Card
-	maxCards     uint
+	content       *fyne.Container
+	env           env.Env
+	draw          sharedModels.CurrentDraw
+	parentWindow  fyne.Window
+	selectedCards []uint
+	pickButton    *widget.Button
 }
 
-func NewCardSelectWidget(env env.Env, parentWindow fyne.Window, maxCards uint) *CardSelectWidget {
+func NewCardSelectWidget(env env.Env, parentWindow fyne.Window) *CardSelectWidget {
 	w := &CardSelectWidget{
-		content:      container.NewGridWithRows(2),
-		maxCards:     maxCards,
 		env:          env,
 		parentWindow: parentWindow,
 	}
@@ -192,44 +212,57 @@ func NewCardSelectWidget(env env.Env, parentWindow fyne.Window, maxCards uint) *
 		dialog.ShowError(err, w.parentWindow)
 		return w
 	}
-	for _, card := range draw.Cards {
-		w.content.Add(NewCardWidget(card, DrawCardWidget, w))
+	w.draw = draw
+	w.pickButton = widget.NewButton("Pick cards", func() {
+		fmt.Println("picking cards:")
+		fmt.Println(w.selectedCards)
+		err := client.PickCards(env, parentWindow, w.selectedCards)
+		if err != nil {
+			log.Err(err).Msg("failed picking cards")
+			dialog.ShowError(err, parentWindow)
+		}
+	})
+	cardGrid := container.NewGridWithRows(2)
+	for cardIndex, card := range w.draw.Cards {
+		cardGrid.Add(NewCardWidget(card, DrawCardWidget, w, uint(cardIndex)))
 	}
+	w.content = container.NewBorder(
+		nil,
+		w.pickButton,
+		nil,
+		nil,
+		cardGrid,
+	)
 	return w
 }
 
 func (w *CardSelectWidget) Refresh() {
-	log.Debug().Msg("amount of cards: " + fmt.Sprint(len(w.cards)) + " with a limit of " + fmt.Sprint(w.maxCards))
-	if len(w.cards) <= int(w.maxCards) && len(w.cards) > 0 {
+	log.Debug().Msg("amount of cards: " + fmt.Sprint(len(w.selectedCards)) + " with a limit of " + fmt.Sprint(w.draw.ToPick))
+	if len(w.selectedCards) <= int(w.draw.ToPick) {
 		log.Debug().Msg("valid amount of cards to pick selected")
-		w.content = container.NewBorder(
-			nil,
-			// bottom
-			widget.NewButton("Pick cards", func() {
-			}),
-			nil,
-			nil,
-			// center
-			w.content,
-		)
+		w.pickButton.Enable()
+	} else {
+		w.pickButton.Disable()
 	}
+	w.BaseWidget.Refresh()
 }
 
 func (w *CardSelectWidget) CreateRenderer() fyne.WidgetRenderer {
-
 	return widget.NewSimpleRenderer(w.content)
-
 }
 
-func (w *CardSelectWidget) AddCardToPool(card sharedModels.Card) {
-	w.cards = append(w.cards, card)
+func (w *CardSelectWidget) AddCardToPool(cardDBID uint) {
+	w.selectedCards = append(w.selectedCards, cardDBID)
 }
-func (w *CardSelectWidget) RemoveCardFromPool(cardToDelete sharedModels.Card) {
-	for index, card := range w.cards {
-		if card == cardToDelete {
-			log.Debug().Msg("deleting card from pool")
-			w.cards = slices.Delete(w.cards, index, 1)
-			return
+func (w *CardSelectWidget) RemoveCardFromPool(cardDBID uint) {
+	lengthBeforeDelete := len(w.selectedCards)
+	for index, cardIDInList := range w.selectedCards {
+		if cardIDInList == cardDBID {
+			w.selectedCards = slices.Delete(w.selectedCards, index, index+1)
+			log.Debug().Msg("deleting card at index " + fmt.Sprint(index))
 		}
+	}
+	if len(w.selectedCards) != lengthBeforeDelete-1 {
+		log.Warn().Msg("deletion of card with id " + fmt.Sprint(cardDBID) + " in list " + fmt.Sprint(w.selectedCards) + " failed")
 	}
 }

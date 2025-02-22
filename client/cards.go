@@ -6,6 +6,7 @@ import (
 
 	"github.com/jkulzer/fib-server/sharedModels"
 
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -114,5 +115,74 @@ func GetDraw(env env.Env, parentWindow fyne.Window) (sharedModels.CurrentDraw, e
 		return sharedModels.CurrentDraw{}, errors.New("Lobby doesn't exist")
 	default:
 		return sharedModels.CurrentDraw{}, errors.New("getting drawn cards failed with http status code " + fmt.Sprint(res.StatusCode))
+	}
+}
+
+func PickCards(env env.Env, parentWindow fyne.Window, cardDBID []uint) error {
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		return err
+	}
+
+	marshaledBody, err := json.Marshal(sharedModels.CardIDList{CardIDList: cardDBID})
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", env.Url+"/lobby/"+loginInfo.LobbyToken+"/pickFromDraw", bytes.NewReader(marshaledBody))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	switch res.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusBadRequest:
+		return errors.New("Lobby doesn't exist or invalid draw ID")
+	case http.StatusConflict:
+		return ErrAlreadyDrewCards
+	default:
+		return errors.New("picking cards failed with http status code " + fmt.Sprint(res.StatusCode))
+	}
+}
+
+func GetHiderHand(env env.Env, parentWindow fyne.Window) (sharedModels.CardList, error) {
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		return sharedModels.CardList{}, err
+	}
+
+	req, err := http.NewRequest("GET", env.Url+"/lobby/"+loginInfo.LobbyToken+"/hiderHand", nil)
+	if err != nil {
+		return sharedModels.CardList{}, err
+	}
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return sharedModels.CardList{}, err
+	}
+
+	byteBody, err := helpers.ReadHttpResponse(res.Body)
+	if err != nil {
+		return sharedModels.CardList{}, err
+	}
+
+	var cardList sharedModels.CardList
+	err = json.Unmarshal(byteBody, &cardList)
+	if err != nil {
+		return sharedModels.CardList{}, err
+	}
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		return cardList, nil
+	case http.StatusBadRequest:
+		return sharedModels.CardList{}, errors.New("Lobby doesn't exist")
+	default:
+		return sharedModels.CardList{}, errors.New("getting hider deck failed with http status code " + fmt.Sprint(res.StatusCode))
 	}
 }
