@@ -213,6 +213,8 @@ github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
+github.com/jkulzer/fib-server v0.0.0-20250222203855-936410e5507a h1:541XkoHEmjT+H+4V8s8Ah4g+QkH7xBs2aftJ0pFQqqQ=
+github.com/jkulzer/fib-server v0.0.0-20250222203855-936410e5507a/go.mod h1:6LeucFHYraA6b63IwGz2OJtDBHVFOqtoa+3kKkTmas4=
 github.com/jkulzer/osm v0.9.0 h1:WucwQZKJ55FVQdBVVD+BRZoxsfvZJsFMCkKHVM45XUg=
 github.com/jkulzer/osm v0.9.0/go.mod h1:r5dB9oE+lK3U5F9F7x2ISxXZ7AKsCQXh2RPSREcp3iA=
 github.com/json-iterator/go v1.1.11/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=

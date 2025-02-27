@@ -5,7 +5,7 @@ go 1.23.4
 require (
 	fyne.io/fyne/v2 v2.5.3
 	github.com/google/uuid v1.6.0
-	github.com/jkulzer/fib-server v0.0.0-20250111011744-575c4a898be6
+	github.com/jkulzer/fib-server v0.0.0-20250222203855-936410e5507a
 	github.com/jkulzer/osm v0.9.0
 	github.com/llgcode/draw2d v0.0.0-20240627062922-0ed1ff131195
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
