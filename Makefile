@@ -5,6 +5,9 @@ run:
 perf-info:
 	 go tool pprof -pdf  . cpuprofile > cpuprofile.pdf
 
-android-install:
-	fyne package -os android -appID dev.jkulzer.findinberlin
+package:
+	fyne package -appID dev.jkulzer.findinberlin --target android/arm64
+
+android-install: package
 	adb install fib_client.apk
+

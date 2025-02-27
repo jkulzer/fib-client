@@ -53,7 +53,6 @@
             jdk11
 						go
 						pkg-config
-						android-studio
 
 						# zlib
 						gnumake
