@@ -16,8 +16,6 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-replace github.com/jkulzer/fib-server => ../fib-server
-
 require (
 	fyne.io/systray v1.11.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
