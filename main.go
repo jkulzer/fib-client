@@ -29,7 +29,8 @@ func main() {
 
 	env := db.InitDB(app, dbSubpath)
 
-	env.Url = "http://localhost:3001"
+	// env.Url = "http://localhost:3001"
+	env.Url = "https://fib-dev.jkulzer.dev"
 	// env.Url = "http://192.168.69.230:3001"
 	// env.Url = "http://192.168.178.178:3001"
 	var loginInfo models.LoginInfo

@@ -42,6 +42,7 @@ func NewSeekerWidget(env env.Env, parentWindow fyne.Window) *SeekerWidget {
 		w.content = container.NewStack(NewSeekerNarrowingPhaseWidget(env, parentWindow))
 		parentWindow.SetContent(w.content)
 	case sharedModels.PhaseEndgame:
+		w.content = container.NewStack(NewSeekerNarrowingPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseFinished:
 	default:
 		error := errors.New("invalid game state: " + fmt.Sprint(gamePhase))

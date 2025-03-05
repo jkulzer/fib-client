@@ -79,13 +79,15 @@ func registerOnServer(env env.Env, username, password string, parentWindow fyne.
 		log.Warn().Msg("couldn't make request" + fmt.Sprint(err))
 		dialog.ShowError(err, parentWindow)
 	} else {
-
 		if res.StatusCode == http.StatusCreated {
 			log.Info().Msg("user registered")
 			dialog.ShowInformation("Registration", "Registration successful!", parentWindow)
-		} else {
+		} else if res.StatusCode == http.StatusBadRequest {
 			log.Warn().Msg("user already exists")
 			error := errors.New("User already exists")
+			dialog.ShowError(error, parentWindow)
+		} else {
+			error := errors.New("failed registering with code " + fmt.Sprint(res.StatusCode))
 			dialog.ShowError(error, parentWindow)
 		}
 	}
@@ -149,7 +151,7 @@ func loginOnServer(env env.Env, username, password string, parentWindow fyne.Win
 		dialog.ShowError(err, parentWindow)
 	} else {
 		switch res.StatusCode {
-		case http.StatusCreated:
+		case http.StatusOK, http.StatusCreated:
 			httpResponse, err := helpers.ReadHttpResponse(res.Body)
 			if err != nil {
 				log.Warn().Msg("failed to read session token http response: " + fmt.Sprint(err))
@@ -171,8 +173,8 @@ func loginOnServer(env env.Env, username, password string, parentWindow fyne.Win
 				log.Warn().Msg("error writing user config to DB with error " + fmt.Sprint(result.Error))
 			} else {
 				log.Info().Msg("wrote user config to DB")
-				loginInfo, _ := helpers.GetAppConfig(env, parentWindow)
-				fmt.Println(loginInfo)
+				// loginInfo, _ := helpers.GetAppConfig(env, parentWindow)
+				// fmt.Println(loginInfo)
 				parentWindow.SetContent(NewLobbyWidget(env, parentWindow))
 			}
 		case http.StatusForbidden:

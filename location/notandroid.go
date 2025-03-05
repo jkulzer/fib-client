@@ -15,8 +15,6 @@ import (
 	"github.com/paulmach/orb"
 )
 
-import "C"
-
 func GetLocation(parentWindow fyne.Window) (orb.Point, error) {
 
 	latEntry := widget.NewEntry()

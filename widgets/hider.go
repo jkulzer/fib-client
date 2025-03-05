@@ -40,6 +40,7 @@ func NewHiderWidget(env env.Env, parentWindow fyne.Window) *HiderWidget {
 	case sharedModels.PhaseLocationNarrowing:
 		w.content = container.NewStack(NewHiderNarrowingPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseEndgame:
+		w.content = container.NewStack(NewHiderNarrowingPhaseWidget(env, parentWindow))
 	case sharedModels.PhaseFinished:
 	default:
 		error := errors.New("invalid game state: " + fmt.Sprint(gamePhase))

@@ -10,4 +10,3 @@ package:
 
 android-install: package
 	adb install fib_client.apk
-

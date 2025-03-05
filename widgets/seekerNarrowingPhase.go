@@ -44,12 +44,13 @@ func NewSeekerNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *Seeke
 		return w
 	}
 
-	mapWidgetInstance := mapWidget.NewMap(w.fc)
+	mapWidgetInstance := mapWidget.NewMap(w.fc, env, &parentWindow)
 	historyWidgetInstance := NewHistoryWidget(env, parentWindow)
+	cursesWidgetInstance := NewCurseWidget(env, parentWindow)
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Map", mapWidgetInstance),
 		container.NewTabItem("Questions", NewQuestionWidget(env, parentWindow, mapWidgetInstance, historyWidgetInstance)),
-		container.NewTabItem("Curses", widget.NewLabel("TODO")),
+		container.NewTabItem("Curses", cursesWidgetInstance),
 		container.NewTabItem("History", historyWidgetInstance),
 	)
 	tabs.SetTabLocation(container.TabLocationBottom)

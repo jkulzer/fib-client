@@ -13,6 +13,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/jkulzer/fib-client/client"
+	"github.com/jkulzer/fib-client/env"
+
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/geojson"
 	"github.com/paulmach/orb/project"
@@ -20,6 +23,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -52,6 +56,9 @@ type Map struct {
 
 	lineColor color.Color
 
+	env          env.Env
+	parentWindow *fyne.Window
+
 	featureCollection *geojson.FeatureCollection // overlay to render
 }
 
@@ -70,7 +77,7 @@ func WithOsmTiles() MapOption {
 	return func(m *Map) {
 		m.tileSource = "https://tile.openstreetmap.org/%d/%d/%d.png"
 		// m.tileSource = "https://b.tile.openstreetmap.fr/hot/%d/%d/%d.png"
-		m.attributionLabel = "OpenStreetMap"
+		m.attributionLabel = "© OpenStreetMap contributors"
 		m.attributionURL = "https://openstreetmap.org"
 		m.hideAttribution = false
 	}
@@ -114,8 +121,12 @@ func WithHTTPClient(client *http.Client) MapOption {
 }
 
 // NewMap creates a new instance of the map widget.
-func NewMap(fc *geojson.FeatureCollection) *Map {
-	m := &Map{cl: &http.Client{}}
+func NewMap(fc *geojson.FeatureCollection, env env.Env, parentWindow *fyne.Window) *Map {
+	m := &Map{
+		cl:           &http.Client{},
+		env:          env,
+		parentWindow: parentWindow,
+	}
 	WithOsmTiles()(m)
 
 	// m.lineColor = color.RGBA{
@@ -143,8 +154,8 @@ func (m *Map) SetFeatureCollection(fc *geojson.FeatureCollection) {
 }
 
 // NewMapWithOptions creates a new instance of the map widget with provided map options.
-func NewMapWithOptions(fc *geojson.FeatureCollection, opts ...MapOption) *Map {
-	m := NewMap(fc)
+func NewMapWithOptions(fc *geojson.FeatureCollection, env env.Env, parentWindow *fyne.Window, opts ...MapOption) *Map {
+	m := NewMap(fc, env, parentWindow)
 	for _, opt := range opts {
 		opt(m)
 	}
@@ -161,25 +172,25 @@ func (m *Map) MinSize() fyne.Size {
 // PanEast will move the map to the East by 1 tile.
 func (m *Map) PanEast() {
 	m.x++
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // PanNorth will move the map to the North by 1 tile.
 func (m *Map) PanNorth() {
 	m.y--
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // PanSouth will move the map to the South by 1 tile.
 func (m *Map) PanSouth() {
 	m.y++
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // PanWest will move the map to the west by 1 tile.
 func (m *Map) PanWest() {
 	m.x--
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // Zoom sets the zoom level to a specific value, between 0 and 19.
@@ -197,7 +208,7 @@ func (m *Map) Zoom(zoom int) {
 			m.zoomOutStep()
 		}
 	}
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // ZoomIn steps the scale of this map to be one step zoomed in.
@@ -206,7 +217,7 @@ func (m *Map) ZoomIn() {
 		return
 	}
 	m.zoomInStep()
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // ZoomOut steps the scale of this map to be one step zoomed out.
@@ -215,7 +226,7 @@ func (m *Map) ZoomOut() {
 		return
 	}
 	m.zoomOutStep()
-	m.Refresh()
+	m.BaseWidget.Refresh()
 }
 
 // CreateRenderer returns the renderer for this widget.
@@ -531,4 +542,19 @@ func renderPolygon(featureGeometry orb.Geometry, gc *draw2dimg.GraphicContext, m
 		gc.Close()
 	}
 	gc.FillStroke()
+}
+
+func (m *Map) Refresh() {
+	mapData, err := client.GetMapData(m.env, *m.parentWindow)
+	if err != nil {
+		dialog.ShowError(err, *m.parentWindow)
+	}
+
+	fc, err := geojson.UnmarshalFeatureCollection(mapData)
+	if err != nil {
+		dialog.ShowError(err, *m.parentWindow)
+	}
+	m.SetFeatureCollection(fc)
+
+	m.BaseWidget.Refresh()
 }

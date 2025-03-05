@@ -17,6 +17,7 @@ import (
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "c-containment/android.c"
 
 const char *isLocationEnabled(uintptr_t java_vm, uintptr_t jni_env, uintptr_t ctx);
 */

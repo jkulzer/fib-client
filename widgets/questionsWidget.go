@@ -13,8 +13,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 
-	"github.com/paulmach/orb/geojson"
-
 	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
 	"github.com/jkulzer/fib-client/location"
@@ -60,7 +58,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked same bezirk")
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Same Ortsteil", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskSameOrtsteil(env, parentWindow)
@@ -69,7 +67,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked same ortsteil")
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Ortsteil last letter", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskOrtsteilLastLetter(env, parentWindow)
@@ -78,7 +76,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			return
 		}
 		log.Debug().Msg("asked ortsteil last letter question")
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	matchingButtonsContainer.Add(widget.NewButtonWithIcon("Train Service", theme.Icon(theme.IconNameInfo), func() {
 		log.Info().Msg("asked train service question")
@@ -100,7 +98,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 					return
 				}
 				trainSelectDialog.Hide()
-				refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+				refreshMap(mapWidgetPointer, historyWidgetPointer)
 			})
 			dialogContent.Add(routeSelectionButton)
 		}
@@ -119,21 +117,21 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	relativeButtonsContainer.Add(widget.NewButtonWithIcon("IKEA Distance", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskQuestion(env, parentWindow, "closerToIkea", "IKEA Distance")
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	relativeButtonsContainer.Add(widget.NewButtonWithIcon("Spree Distance", theme.Icon(theme.IconNameInfo), func() {
 		err := client.AskQuestion(env, parentWindow, "closerToSpree", "Spree Distance")
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	w.content.Add(relativeButtonsContainer)
 
@@ -153,7 +151,7 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 			dialog.ShowError(err, parentWindow)
 			return
 		}
-		refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
 	}))
 	w.content.Add(thermometerButtonsContainer)
 
@@ -203,8 +201,19 @@ func NewQuestionWidget(env env.Env, parentWindow fyne.Window, mapWidgetPointer *
 	}))
 	// add radar questions container
 	w.content.Add(radarButtonsContainer)
-	w.content = container.NewStack(container.NewVScroll(w.content))
 
+	w.content.Add(widget.NewLabel("Detail questions"))
+	photoQuestionsContainer := container.NewGridWithColumns(2)
+	photoQuestionsContainer.Add(widget.NewButtonWithIcon("Hiding zone", theme.Icon(theme.IconNameRadioButton), func() {
+		err := client.AskQuestion(env, parentWindow, "isInHidingZone", "In hiding zone")
+		if err != nil {
+			dialog.ShowError(err, parentWindow)
+		}
+		refreshMap(mapWidgetPointer, historyWidgetPointer)
+	}))
+	w.content.Add(photoQuestionsContainer)
+
+	w.content = container.NewStack(container.NewVScroll(w.content))
 	return w
 }
 
@@ -219,23 +228,11 @@ func AskRadarWithRadius(env env.Env, parentWindow fyne.Window, radius float64, m
 		dialog.ShowError(err, parentWindow)
 		return
 	}
-	refreshMap(env, parentWindow, mapWidgetPointer, historyWidgetPointer)
+	refreshMap(mapWidgetPointer, historyWidgetPointer)
 }
 
-func refreshMap(env env.Env, parentWindow fyne.Window, mapWidgetPointer *mapWidget.Map, historyWidgetPointer *HistoryWidget) {
-	mapData, err := client.GetMapData(env, parentWindow)
-	if err != nil {
-		dialog.ShowError(err, parentWindow)
-	}
-
-	fc, err := geojson.UnmarshalFeatureCollection(mapData)
-	if err != nil {
-		dialog.ShowError(err, parentWindow)
-	}
-
-	mapWidgetPointer.SetFeatureCollection(fc)
+func refreshMap(mapWidgetPointer *mapWidget.Map, historyWidgetPointer *HistoryWidget) {
 	mapWidgetPointer.Refresh()
 
-	// historyWidgetPointer.DoRefresh()
 	historyWidgetPointer.Refresh()
 }

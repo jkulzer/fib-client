@@ -45,7 +45,7 @@ func NewHiderNarrowingPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderN
 		return w
 	}
 
-	mapWidgetInstance := mapWidget.NewMap(w.fc)
+	mapWidgetInstance := mapWidget.NewMap(w.fc, env, &parentWindow)
 	historyWidgetInstance := NewHistoryWidget(env, parentWindow)
 	cardsWidgetInstance := NewCardsWidget(env, parentWindow)
 

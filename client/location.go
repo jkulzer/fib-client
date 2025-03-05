@@ -77,6 +77,7 @@ func SaveLocation(env env.Env, parentWindow fyne.Window, point orb.Point) error 
 	if err != nil {
 		return err
 	}
+
 	switch res.StatusCode {
 	case http.StatusOK:
 		return nil
@@ -84,6 +85,8 @@ func SaveLocation(env env.Env, parentWindow fyne.Window, point orb.Point) error 
 		return errors.New("Can't find lobby")
 	case http.StatusForbidden:
 		return errors.New("Not authenticated.")
+	case http.StatusConflict:
+		return sharedModels.ErrHiderLocationNotInZone
 	default:
 		return errors.New("saving location failed with http status code " + fmt.Sprint(res.StatusCode))
 	}

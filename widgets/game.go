@@ -68,13 +68,17 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 	// lat, lon := location.GetLocation(parentWindow)
 
 	logoutButton := widget.NewButton("Logout", func() {
-		result := env.DB.Delete(&models.LoginInfo{}, 1)
-		if result.Error != nil {
-			log.Err(result.Error).Msg(fmt.Sprint(result.Error))
-			dialog.ShowError(result.Error, parentWindow)
-		}
-		loginRegisterTabs := GetLoginRegisterTabs(env, parentWindow)
-		parentWindow.SetContent(loginRegisterTabs)
+		dialog.ShowConfirm("Logout", "Are you sure you want to log out?", func(confirmed bool) {
+			if confirmed {
+				result := env.DB.Delete(&models.LoginInfo{}, 1)
+				if result.Error != nil {
+					log.Err(result.Error).Msg(fmt.Sprint(result.Error))
+					dialog.ShowError(result.Error, parentWindow)
+				}
+				loginRegisterTabs := GetLoginRegisterTabs(env, parentWindow)
+				parentWindow.SetContent(loginRegisterTabs)
+			}
+		}, parentWindow)
 	})
 
 	leaveLobbyButton := widget.NewButton("Leave Lobby", func() {

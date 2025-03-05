@@ -144,7 +144,7 @@ func PickCards(env env.Env, parentWindow fyne.Window, cardDBID []uint) error {
 	case http.StatusBadRequest:
 		return errors.New("Lobby doesn't exist or invalid draw ID")
 	case http.StatusConflict:
-		return ErrAlreadyDrewCards
+		return errors.New("You can't draw cards, it would exceed your maximum hand size of " + fmt.Sprint(sharedModels.MaxHandSize))
 	default:
 		return errors.New("picking cards failed with http status code " + fmt.Sprint(res.StatusCode))
 	}
@@ -184,5 +184,57 @@ func GetHiderHand(env env.Env, parentWindow fyne.Window) (sharedModels.CardList,
 		return sharedModels.CardList{}, errors.New("Lobby doesn't exist")
 	default:
 		return sharedModels.CardList{}, errors.New("getting hider deck failed with http status code " + fmt.Sprint(res.StatusCode))
+	}
+}
+
+func DiscardCard(env env.Env, parentWindow fyne.Window, cardToDiscard uint) error {
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", env.Url+"/lobby/"+loginInfo.LobbyToken+"/discardCard/"+fmt.Sprint(cardToDiscard), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	switch res.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusBadRequest:
+		return errors.New("Lobby doesn't exist or invalid card ID")
+	default:
+		return errors.New("discarding card failed with http status code " + fmt.Sprint(res.StatusCode))
+	}
+}
+
+var ErrBadRequestCard error = errors.New("Lobby doesn't exist or invalid card ID")
+
+func PlayCard(env env.Env, parentWindow fyne.Window, cardToPlay uint) error {
+	loginInfo, err := helpers.GetAppConfig(env, parentWindow)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", env.Url+"/lobby/"+loginInfo.LobbyToken+"/playCard/"+fmt.Sprint(cardToPlay), nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Authorization", "Bearer "+loginInfo.Token.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	switch res.StatusCode {
+	case http.StatusOK:
+		return nil
+	case http.StatusBadRequest:
+		return ErrBadRequestCard
+	default:
+		return errors.New("playing card failed with http status code " + fmt.Sprint(res.StatusCode))
 	}
 }

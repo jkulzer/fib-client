@@ -3,11 +3,11 @@ package widgets
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"slices"
-	"time"
 
 	fyne "fyne.io/fyne/v2"
-	// "fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
@@ -27,48 +27,48 @@ type CardsWidget struct {
 }
 
 func NewCardsWidget(env env.Env, parentWindow fyne.Window) *CardsWidget {
-	w := &CardsWidget{}
+	w := &CardsWidget{
+		env:          env,
+		parentWindow: parentWindow,
+	}
 	w.ExtendBaseWidget(w)
-	w.env = env
-	w.parentWindow = parentWindow
 	w.content = container.NewVBox()
 
-	go func() {
-		for {
-			timer := time.NewTimer(2 * time.Second)
-			<-timer.C
-
-			w.Refresh()
-		}
-	}()
 	return w
 }
 
 func (w *CardsWidget) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(container.NewScroll(w.content))
+}
+
+func (w *CardsWidget) SetContent() error {
+	w.content.RemoveAll()
+	log.Info().Msg("refreshing card widget")
 	cardActions, err := client.GetCardActions(w.env, w.parentWindow)
 	if err != nil {
 		dialog.ShowError(err, w.parentWindow)
+		return err
 	}
-	w.content.Add(
-		widget.NewButton("Check for in progress draw", func() {
-			draw, err := client.GetDraw(w.env, w.parentWindow)
-			if err != nil {
-				log.Err(err).Msg("failed getting draw")
-				dialog.ShowError(err, w.parentWindow)
-				return
-			}
-			if len(draw.Cards) < 1 {
-				dialog.ShowInformation("Card draw", "There is no draw in progress", w.parentWindow)
-			} else {
-				cardSelectDialog(w.env, w.parentWindow)
-			}
-		}),
-	)
+	log.Debug().Msg(fmt.Sprint("card draws: ", cardActions))
+	draw, err := client.GetDraw(w.env, w.parentWindow)
+	if err != nil {
+		log.Err(err).Msg("failed getting draw")
+		dialog.ShowError(err, w.parentWindow)
+		return err
+	}
+	if len(draw.Cards) > 0 {
+		w.content.Add(
+			widget.NewButton("Resume in progress draw", func() {
+				cardSelectDialog(w.env, w.parentWindow, w)
+			}),
+		)
+	}
 	if len(cardActions.Draws) == 0 {
 		w.content.Add(widget.NewLabel("no remaining draws"))
 	} else {
 		drawContainer := container.NewVBox()
 		for _, cardAction := range cardActions.Draws {
+			log.Debug().Msg("found a card draw")
 			drawContainer.Add(
 				container.NewVBox(
 					widget.NewLabel("Draw "+fmt.Sprint(cardAction.CardsToDraw)+" cards and pick "+fmt.Sprint(cardAction.CardsToPick)),
@@ -84,7 +84,7 @@ func (w *CardsWidget) CreateRenderer() fyne.WidgetRenderer {
 							dialog.ShowError(err, w.parentWindow)
 							return
 						}
-						cardSelectDialog(w.env, w.parentWindow)
+						cardSelectDialog(w.env, w.parentWindow, w)
 					}),
 				),
 			)
@@ -95,20 +95,26 @@ func (w *CardsWidget) CreateRenderer() fyne.WidgetRenderer {
 	if err != nil {
 		log.Err(err).Msg("failed getting hider hand")
 		dialog.ShowError(err, w.parentWindow)
-		return widget.NewSimpleRenderer(container.NewScroll(w.content))
 	}
 	cardGrid := container.NewGridWithRows(2)
 	for _, handCard := range hiderHand.List {
-		cardGrid.Add(NewCardWidget(handCard, DisplayCardWidget, nil, 0))
+		cardGrid.Add(NewCardWidget(handCard, PlayCardWidget, nil, 0, w.env, w.parentWindow, w))
 	}
 	w.content.Add(widget.NewLabel("Your hand:"))
-	w.content.Add(cardGrid)
-	return widget.NewSimpleRenderer(container.NewScroll(w.content))
+	w.content.Add(container.NewHScroll(cardGrid))
+	w.content.Refresh()
+	return nil
 }
 
-func cardSelectDialog(env env.Env, parentWindow fyne.Window) {
-	drawnCardsContainer := NewCardSelectWidget(env, parentWindow)
-	cardDrawDialog := dialog.NewCustom("Drawn cards", "dismiss", drawnCardsContainer, parentWindow)
+func (w *CardsWidget) Refresh() {
+	w.SetContent()
+	w.BaseWidget.Refresh()
+}
+
+func cardSelectDialog(env env.Env, parentWindow fyne.Window, cardsWidget *CardsWidget) {
+	var cardDrawDialog *dialog.CustomDialog
+	drawnCardsContainer := NewCardSelectWidget(env, parentWindow, &cardDrawDialog, cardsWidget)
+	cardDrawDialog = dialog.NewCustom("Drawn cards", "dismiss", drawnCardsContainer, parentWindow)
 	cardDrawDialog.Resize(fyne.NewSize(300, 600))
 	cardDrawDialog.Show()
 }
@@ -119,6 +125,8 @@ type CardWidget struct {
 	cardIndex        uint
 	selected         bool
 	selectedText     *widget.Label
+	env              env.Env
+	parentWindow     fyne.Window
 	widgetType       CardWidgetType
 	cardSelectWidget *CardSelectWidget
 	card             sharedModels.Card
@@ -132,14 +140,15 @@ const (
 	DisplayCardWidget
 )
 
-func NewCardWidget(card sharedModels.Card, widgetType CardWidgetType, cardSelectWidget *CardSelectWidget, cardIndex uint) *CardWidget {
+func NewCardWidget(card sharedModels.Card, widgetType CardWidgetType, cardSelectWidget *CardSelectWidget, cardIndex uint, env env.Env, parentWindow fyne.Window, cardsWidget *CardsWidget) *CardWidget {
 	w := &CardWidget{
 		cardIndex:        cardIndex,
-		content:          container.NewVBox(),
 		selectedText:     widget.NewLabel("selected"),
 		card:             card,
 		cardSelectWidget: cardSelectWidget,
 		widgetType:       widgetType,
+		env:              env,
+		parentWindow:     parentWindow,
 	}
 	w.ExtendBaseWidget(w)
 
@@ -148,27 +157,48 @@ func NewCardWidget(card sharedModels.Card, widgetType CardWidgetType, cardSelect
 		Bold:      true,
 		Underline: true,
 	}
-	// title.Wrapping = fyne.TextWrapWord
 	var description *widget.Label
 	if w.card.Description != "" {
 		description = widget.NewLabel(w.card.Description)
 	} else {
 		description = widget.NewLabel("No Description")
 	}
-	w.content.Add(title)
-	w.content.Add(description)
 
-	description.Wrapping = fyne.TextWrapWord
+	var castingCost *widget.Label
+	if w.card.CastingCostDescription != "" {
+		castingCost = widget.NewLabel("Casting cost: " + w.card.CastingCostDescription)
+	} else {
+		castingCost = widget.NewLabel("Casting cost: No casting cost")
+	}
+	details := container.NewVBox(description, castingCost)
+	w.content = container.NewBorder(
+		title,
+		widget.NewButton("Discard card", func() {
+			dialog.ShowConfirm("Discard card", "Are you sure you want to discard this card?", func(confirmed bool) {
+				if confirmed {
+					err := client.DiscardCard(env, parentWindow, w.card.IDInDB)
+					if err != nil {
+						log.Err(err).Msg("failed discarding card")
+						dialog.ShowError(err, parentWindow)
+					}
+					cardsWidget.Refresh()
+				}
+			}, parentWindow)
+		}),
+		nil,
+		nil,
+		details,
+	)
+
+	// description.Wrapping = fyne.TextWrapBreak
 
 	return w
 }
 
 func (w *CardWidget) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(w.content)
-}
-
-func (w *CardWidget) Refresh() {
-	w.BaseWidget.Refresh()
+	bgRectangle := canvas.NewRectangle(color.RGBA{150, 150, 150, 250})
+	bgRectangle.Resize(fyne.NewSize(100, 300))
+	return widget.NewSimpleRenderer(container.NewStack(bgRectangle, w.content))
 }
 
 func (w *CardWidget) Tapped(*fyne.PointEvent) {
@@ -187,23 +217,33 @@ func (w *CardWidget) Tapped(*fyne.PointEvent) {
 		w.cardSelectWidget.BaseWidget.Refresh()
 		w.Refresh()
 		w.BaseWidget.Refresh()
+	case PlayCardWidget:
+		dialog.ShowConfirm("Card", "Are you sure you want to play this card?", func(confirmed bool) {
+			if confirmed {
+				client.PlayCard(w.env, w.parentWindow, w.card.IDInDB)
+			}
+		}, w.parentWindow)
 	}
 }
 
 type CardSelectWidget struct {
 	widget.BaseWidget
-	content       *fyne.Container
-	env           env.Env
-	draw          sharedModels.CurrentDraw
-	parentWindow  fyne.Window
-	selectedCards []uint
-	pickButton    *widget.Button
+	content        *fyne.Container
+	env            env.Env
+	draw           sharedModels.CurrentDraw
+	parentWindow   fyne.Window
+	selectedCards  []uint
+	pickButton     *widget.Button
+	cardDrawDialog *dialog.CustomDialog
+	cardsWidget    *CardsWidget
 }
 
-func NewCardSelectWidget(env env.Env, parentWindow fyne.Window) *CardSelectWidget {
+func NewCardSelectWidget(env env.Env, parentWindow fyne.Window, cardDrawDialog **dialog.CustomDialog, cardsWidget *CardsWidget) *CardSelectWidget {
 	w := &CardSelectWidget{
-		env:          env,
-		parentWindow: parentWindow,
+		env:            env,
+		parentWindow:   parentWindow,
+		cardDrawDialog: *cardDrawDialog,
+		cardsWidget:    cardsWidget,
 	}
 	w.ExtendBaseWidget(w)
 	draw, err := client.GetDraw(w.env, w.parentWindow)
@@ -221,10 +261,12 @@ func NewCardSelectWidget(env env.Env, parentWindow fyne.Window) *CardSelectWidge
 			log.Err(err).Msg("failed picking cards")
 			dialog.ShowError(err, parentWindow)
 		}
+		w.cardsWidget.Refresh()
 	})
 	cardGrid := container.NewGridWithRows(2)
 	for cardIndex, card := range w.draw.Cards {
-		cardGrid.Add(NewCardWidget(card, DrawCardWidget, w, uint(cardIndex)))
+		cardWidget := NewCardWidget(card, DrawCardWidget, w, uint(cardIndex), env, parentWindow, w.cardsWidget)
+		cardGrid.Add(cardWidget)
 	}
 	w.content = container.NewBorder(
 		nil,
