@@ -124,6 +124,7 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 		if err != nil {
 			dialog.ShowError(err, parentWindow)
 		}
+		gameStartTime := runStartTime.Add(sharedModels.RunDuration)
 
 		updateText := func(s string) {
 			countdownText.Text = s
@@ -133,7 +134,7 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 		for {
 			select {
 			case <-ticker.C:
-				since := time.Since(runStartTime)
+				since := time.Since(gameStartTime)
 
 				// Format with milliseconds
 				since = since.Truncate(10 * time.Millisecond)
