@@ -114,43 +114,6 @@ func NewHiderRunPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderRunPhas
 		}
 	}()
 
-	// str := binding.NewString()
-	// str.Set("Countdown initializing")
-	//
-	// text := widget.NewLabelWithData(str)
-	//
-	// w.content.Add(text)
-	//
-	// go func() {
-	//
-	// 	for {
-	// 		timer := time.NewTimer(16 * time.Millisecond)
-	// 		<-timer.C
-	//
-	// 		countdown := time.Until(runStartTime.Add(sharedModels.RunDuration))
-	//
-	// 		countdownString := countdown.Truncate(10 * time.Millisecond).String()
-	//
-	// 		str.Set(countdownString)
-	// 	}
-	// }()
-	//
-	// go func() {
-	// 	for {
-	// 		timer := time.NewTimer(2 * time.Second)
-	// 		<-timer.C
-	//
-	// 		gamePhase := client.GetGamePhase(env, parentWindow)
-	// 		if gamePhase == sharedModels.PhaseLocationNarrowing {
-	// 			log.Info().Msg("now in location narrowing phase")
-	// 			narrowingPhaseWidget := NewHiderNarrowingPhaseWidget(env, parentWindow)
-	// 			gameFrame := NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
-	// 			parentWindow.SetContent(gameFrame)
-	// 			return
-	// 		}
-	// 	}
-	// }()
-
 	return w
 }
 

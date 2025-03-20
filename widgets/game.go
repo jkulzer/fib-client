@@ -2,20 +2,19 @@ package widgets
 
 import (
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	// "bytes"
-	// "encoding/json"
-	// "errors"
 	"fmt"
-	// "net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/jkulzer/fib-client/client"
 	"github.com/jkulzer/fib-client/env"
-	// "github.com/jkulzer/fib-client/location"
 	"github.com/jkulzer/fib-client/helpers"
 	"github.com/jkulzer/fib-client/models"
 	"github.com/jkulzer/fib-server/sharedModels"
@@ -115,11 +114,52 @@ func NewGameFrameWidget(env env.Env, parentWindow fyne.Window, center fyne.Canva
 		fyne.Clipboard.SetContent(parentWindow.Clipboard(), loginInfo.LobbyToken)
 	})
 
+	countdownText := canvas.NewText("Countdown initializing", theme.ForegroundColor())
+	countdownText.Alignment = fyne.TextAlignCenter
+	countdownText.TextStyle = fyne.TextStyle{Bold: true}
+
+	go func() {
+		ticker := time.NewTicker(50 * time.Millisecond) // Smooth animation
+		runStartTime, err := client.RunStartTime(env, parentWindow)
+		if err != nil {
+			dialog.ShowError(err, parentWindow)
+		}
+
+		updateText := func(s string) {
+			countdownText.Text = s
+			canvas.Refresh(countdownText) // Force redraw
+		}
+
+		for {
+			select {
+			case <-ticker.C:
+				since := time.Since(runStartTime)
+
+				// Format with milliseconds
+				since = since.Truncate(10 * time.Millisecond)
+				hours := int(since.Hours())
+				minutes := int(since.Minutes()) % 60
+				seconds := int(since.Seconds()) % 60
+				millis := since.Milliseconds() % 1000 / 10
+
+				var timeStr string
+				if hours > 0 {
+					timeStr = fmt.Sprintf("%02d:%02d:%02d.%02d", hours, minutes, seconds, millis)
+				} else {
+					timeStr = fmt.Sprintf("%02d:%02d.%02d", minutes, seconds, millis)
+				}
+
+				updateText(timeStr)
+			}
+		}
+	}()
+
 	top := container.NewHBox(
 		widget.NewLabel("Lobby code: "+loginInfo.LobbyToken),
 		copyTokenButton,
 		logoutButton,
 		leaveLobbyButton,
+		countdownText,
 	)
 
 	w.content = container.NewBorder(top, nil, nil, nil, center)
