@@ -22,7 +22,11 @@ Die folgenden Schritte werden alle in der Nix Shell ausgeführt
 go mod tidy
 ```
 
-4. Die App kompilieren
+4. Server-URL konfigurieren
+
+In der Datei `main.go` muss die Variable `env.Url` auf die URL des Servers gesetzt werden.
+
+5. Die App kompilieren
 
 ```bash
 make package

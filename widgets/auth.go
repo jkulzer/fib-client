@@ -48,6 +48,7 @@ func NewRegisterWidget(env env.Env, parentWindow fyne.Window) *RegisterWidget {
 		OnSubmit: func() { // optional, handle form submission
 			go func() {
 				registerOnServer(env, usernameEntry.Text, passwordEntry.Text, parentWindow)
+				loginOnServer(env, usernameEntry.Text, passwordEntry.Text, parentWindow)
 			}()
 		},
 		SubmitText: "Register",

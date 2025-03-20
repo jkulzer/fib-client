@@ -2,9 +2,12 @@ package widgets
 
 import (
 	fyne "fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/theme"
+	// "fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
 	"fmt"
@@ -57,42 +60,96 @@ func NewHiderRunPhaseWidget(env env.Env, parentWindow fyne.Window) *HiderRunPhas
 		dialog.ShowError(err, parentWindow)
 	}
 
-	str := binding.NewString()
-	str.Set("Countdown initializing")
+	// Create text object with large font
+	countdownText := canvas.NewText("Countdown initializing", theme.ForegroundColor())
+	countdownText.Alignment = fyne.TextAlignCenter
+	countdownText.TextSize = 48 // Big font size
+	countdownText.TextStyle = fyne.TextStyle{Bold: true}
 
-	text := widget.NewLabelWithData(str)
+	// Create centered container with padding
+	centered := container.New(
+		layout.NewPaddedLayout(),
+		container.NewCenter(
+			countdownText,
+		),
+	)
 
-	w.content.Add(text)
+	w.content.Add(centered)
 
 	go func() {
+		endTime := runStartTime.Add(sharedModels.RunDuration)
+		ticker := time.NewTicker(50 * time.Millisecond) // Smooth animation
+		defer ticker.Stop()
 
-		for {
-			timer := time.NewTimer(16 * time.Millisecond)
-			<-timer.C
-
-			countdown := time.Until(runStartTime.Add(sharedModels.RunDuration))
-
-			countdownString := countdown.Truncate(10 * time.Millisecond).String()
-
-			str.Set(countdownString)
+		updateText := func(s string) {
+			countdownText.Text = s
+			canvas.Refresh(countdownText) // Force redraw
 		}
-	}()
 
-	go func() {
 		for {
-			timer := time.NewTimer(2 * time.Second)
-			<-timer.C
+			select {
+			case <-ticker.C:
+				remaining := time.Until(endTime)
+				if remaining <= 0 {
+					updateText("RUN PHASE DOWN")
+					return
+				}
 
-			gamePhase := client.GetGamePhase(env, parentWindow)
-			if gamePhase == sharedModels.PhaseLocationNarrowing {
-				log.Info().Msg("now in location narrowing phase")
-				narrowingPhaseWidget := NewHiderNarrowingPhaseWidget(env, parentWindow)
-				gameFrame := NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
-				parentWindow.SetContent(gameFrame)
-				return
+				// Format with milliseconds
+				remaining = remaining.Truncate(10 * time.Millisecond)
+				hours := int(remaining.Hours())
+				minutes := int(remaining.Minutes()) % 60
+				seconds := int(remaining.Seconds()) % 60
+				millis := remaining.Milliseconds() % 1000 / 10
+
+				var timeStr string
+				if hours > 0 {
+					timeStr = fmt.Sprintf("%02d:%02d:%02d.%02d", hours, minutes, seconds, millis)
+				} else {
+					timeStr = fmt.Sprintf("%02d:%02d.%02d", minutes, seconds, millis)
+				}
+
+				updateText(timeStr)
 			}
 		}
 	}()
+
+	// str := binding.NewString()
+	// str.Set("Countdown initializing")
+	//
+	// text := widget.NewLabelWithData(str)
+	//
+	// w.content.Add(text)
+	//
+	// go func() {
+	//
+	// 	for {
+	// 		timer := time.NewTimer(16 * time.Millisecond)
+	// 		<-timer.C
+	//
+	// 		countdown := time.Until(runStartTime.Add(sharedModels.RunDuration))
+	//
+	// 		countdownString := countdown.Truncate(10 * time.Millisecond).String()
+	//
+	// 		str.Set(countdownString)
+	// 	}
+	// }()
+	//
+	// go func() {
+	// 	for {
+	// 		timer := time.NewTimer(2 * time.Second)
+	// 		<-timer.C
+	//
+	// 		gamePhase := client.GetGamePhase(env, parentWindow)
+	// 		if gamePhase == sharedModels.PhaseLocationNarrowing {
+	// 			log.Info().Msg("now in location narrowing phase")
+	// 			narrowingPhaseWidget := NewHiderNarrowingPhaseWidget(env, parentWindow)
+	// 			gameFrame := NewGameFrameWidget(env, parentWindow, narrowingPhaseWidget)
+	// 			parentWindow.SetContent(gameFrame)
+	// 			return
+	// 		}
+	// 	}
+	// }()
 
 	return w
 }

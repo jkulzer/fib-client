@@ -2,9 +2,11 @@ package widgets
 
 import (
 	fyne "fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"fmt"
@@ -33,24 +35,57 @@ func NewSeekerRunPhaseWidget(env env.Env, parentWindow fyne.Window) *SeekerRunPh
 		dialog.ShowError(err, parentWindow)
 	}
 
-	str := binding.NewString()
-	str.Set("Countdown initializing")
+	// Create text object with large font
+	countdownText := canvas.NewText("Countdown initializing", theme.ForegroundColor())
+	countdownText.Alignment = fyne.TextAlignCenter
+	countdownText.TextSize = 48 // Big font size
+	countdownText.TextStyle = fyne.TextStyle{Bold: true}
 
-	text := widget.NewLabelWithData(str)
+	// Create centered container with padding
+	centered := container.New(
+		layout.NewPaddedLayout(),
+		container.NewCenter(
+			countdownText,
+		),
+	)
 
-	w.content.Add(text)
+	w.content.Add(centered)
 
 	go func() {
+		endTime := runStartTime.Add(sharedModels.RunDuration)
+		ticker := time.NewTicker(50 * time.Millisecond) // Smooth animation
+		defer ticker.Stop()
+
+		updateText := func(s string) {
+			countdownText.Text = s
+			canvas.Refresh(countdownText) // Force redraw
+		}
+
 		for {
-			timer := time.NewTimer(16 * time.Millisecond)
-			<-timer.C
+			select {
+			case <-ticker.C:
+				remaining := time.Until(endTime)
+				if remaining <= 0 {
+					updateText("RUN PHASE DOWN")
+					return
+				}
 
-			countdown := time.Until(runStartTime.Add(sharedModels.RunDuration))
+				// Format with milliseconds
+				remaining = remaining.Truncate(10 * time.Millisecond)
+				hours := int(remaining.Hours())
+				minutes := int(remaining.Minutes()) % 60
+				seconds := int(remaining.Seconds()) % 60
+				millis := remaining.Milliseconds() % 1000 / 10
 
-			countdownString := countdown.Truncate(10 * time.Millisecond).String()
+				var timeStr string
+				if hours > 0 {
+					timeStr = fmt.Sprintf("%02d:%02d:%02d.%02d", hours, minutes, seconds, millis)
+				} else {
+					timeStr = fmt.Sprintf("%02d:%02d.%02d", minutes, seconds, millis)
+				}
 
-			str.Set(countdownString)
-			w.Refresh()
+				updateText(timeStr)
+			}
 		}
 	}()
 
